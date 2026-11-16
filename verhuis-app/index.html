@@ -1041,8 +1041,10 @@ function startRefine(w,isNew){
   V.stage.style.cursor="wait";setTimeout(()=>{computeRefine();V.stage.style.cursor="";drawOverlay();renderSheet()},20);drawOverlay();renderSheet();
 }
 function computeRefine(){
-  const R=V.ref,P=V.pano;if(!R)return;const r=wallMaskInPoly(P,R.w.pts,R.tol,R.seeds);if(!r){R.cur=null;return}
-  R.poly=polyMaskSmall(R.w.pts,r.MW,r.MH);R.auto=r;const m=new Uint8Array(r.m);
+  const R=V.ref,P=V.pano;if(!R)return;let r;
+  if(R.w.pts){r=wallMaskInPoly(P,R.w.pts,R.tol,R.seeds);if(!r){R.cur=null;return}R.poly=polyMaskSmall(R.w.pts,r.MW,r.MH)}
+  else{const mk=MASKS.get(R.w.mask);if(!mk){R.cur=null;return}r={m:new Uint8Array(mk.data),MW:mk.w,MH:mk.h};R.poly=null}
+  R.auto=r;const m=new Uint8Array(r.m);
   for(const s of R.strokes)stampMask(m,r.MW,r.MH,s.u,s.v,s.r,s.val,R.poly);
   R.cur={m,MW:r.MW,MH:r.MH};refreshCompose();
 }
@@ -1057,13 +1059,13 @@ function renderSheet(){
     const R=V.ref;const tool=R.tool;
     showHint(!R.cur?"Muur wordt uitgezocht…":tool==="look"?"Sleep om rond te kijken.":tool==="fill"?"Tik op een stuk muur dat nog mist.":tool==="brushPlus"?"Veeg over wat er nog bij moet.":"Veeg over wat niet geverfd moet worden, zoals een witte bank of kast.");
     sh.innerHTML=`<div class="row between"><b>${esc(R.w.name)}: controleren</b><div class="row"><button class="btn sm" id="rundo" ${R.strokes.length||R.seeds.length?"":"disabled"}>Stap terug</button><button class="btn sm" id="rcancel">Annuleren</button><button class="btn sm primary" id="rsave" ${R.cur?"":"disabled"}>Opslaan</button></div></div>
-    <p class="small muted">Het blauwe deel wordt geverfd. Schilderijen, planten en meubels heeft de app er al uitgehaald. Klopt iets niet, gebruik dan de kwast. Met twee vingers (of Kijken) draai je rond.</p>
-    <div class="row"><div class="seg" role="group" aria-label="Gereedschap"><button data-tool="look" class="${tool==="look"?"on":""}">Kijken</button><button data-tool="brushMinus" class="${tool==="brushMinus"?"on":""}">Kwast: eraf</button><button data-tool="brushPlus" class="${tool==="brushPlus"?"on":""}">Kwast: erbij</button><button data-tool="fill" class="${tool==="fill"?"on":""}">Tik: aanvullen</button></div></div>
+    <p class="small muted">Het blauwe deel wordt geverfd. Schilderijen, planten, ramen en meubels zijn er al uitgehaald. Klopt iets niet, gebruik dan de kwast. Met twee vingers (of Kijken) draai je rond.</p>
+    <div class="row"><div class="seg" role="group" aria-label="Gereedschap"><button data-tool="look" class="${tool==="look"?"on":""}">Kijken</button><button data-tool="brushMinus" class="${tool==="brushMinus"?"on":""}">Kwast: eraf</button><button data-tool="brushPlus" class="${tool==="brushPlus"?"on":""}">Kwast: erbij</button>${R.w.pts?`<button data-tool="fill" class="${tool==="fill"?"on":""}">Tik: aanvullen</button>`:""}</div></div>
     <div class="row small" style="gap:14px"><label class="row" style="gap:8px;flex:1;min-width:200px"><span class="muted">Kwastgrootte</span><input type="range" id="rsize" min="6" max="90" value="${R.size}" style="flex:1"></label>
-      <label class="row" style="gap:8px;flex:1;min-width:200px"><span class="muted">Hoe streng</span><input type="range" id="rtol" min="1" max="10" step="0.5" value="${R.tol}" style="flex:1" title="Lager: meer voorwerpen eruit. Hoger: meer muur erbij."></label></div>`;
+      ${R.w.pts?`<label class="row" style="gap:8px;flex:1;min-width:200px"><span class="muted">Hoe streng</span><input type="range" id="rtol" min="1" max="10" step="0.5" value="${R.tol}" style="flex:1" title="Lager: meer voorwerpen eruit. Hoger: meer muur erbij."></label>`:""}</div>`;
     sh.querySelectorAll("[data-tool]").forEach(b=>b.onclick=()=>{R.tool=b.dataset.tool;renderSheet()});
     $("#rsize",sh).oninput=e=>{R.size=+e.target.value;lsSet("brush",R.size)};
-    $("#rtol",sh).onchange=e=>{R.tol=+e.target.value;lsSet("rtol",R.tol);computeRefine()};
+    const rt=$("#rtol",sh);if(rt)rt.onchange=e=>{R.tol=+e.target.value;lsSet("rtol",R.tol);computeRefine()};
     $("#rundo",sh).onclick=()=>{if(R.strokes.length){const g=R.strokes[R.strokes.length-1].g;while(R.strokes.length&&R.strokes[R.strokes.length-1].g===g)R.strokes.pop()}else R.seeds.pop();computeRefine();renderSheet()};
     $("#rcancel",sh).onclick=()=>{V.mode="look";V.ref=null;refreshCompose();drawOverlay();renderSheet()};
     $("#rsave",sh).onclick=async e=>{e.target.disabled=true;e.target.textContent="Opslaan…";
@@ -1135,7 +1137,7 @@ function renderSheet(){
       <div style="flex:1;min-width:0"><div class="eyebrow" style="color:#94A39F">${esc(sw.name)}${num(sw.m2)?` · ${num(sw.m2)} m²`:""}</div>
       <div class="wn">${V.preview?esc(prevName)+` <span class="mono small">${esc(V.preview)}</span>`:cp?esc(cp.name||cp.hex):"Originele kleur"}</div>
       <div class="small muted mono">${V.preview?"voorbeeld, nog niet opgeslagen":cp?esc([cp.brand,cp.code,cp.sheen].filter(Boolean).join(" · ")||"nog geen merk of code"):"tik een kleur aan om te proberen"}</div></div>
-      <div class="row" style="gap:6px">${V.preview?`<button class="btn sm primary" id="psave">Gebruik deze kleur</button><button class="btn sm" id="pcancel">Terug</button>`:`${cp?`<button class="btn sm" id="wpe">Merk & code</button>`:""}${sw.pts&&assets?`<button class="btn sm" id="wref" title="Voorwerpen eruit halen of stukken toevoegen">Verfijnen</button>`:""}<button class="btn sm" id="wren">Naam / m²</button><button class="btn sm danger" id="wdel" aria-label="Muur verwijderen">✕</button>`}</div></div>
+      <div class="row" style="gap:6px">${V.preview?`<button class="btn sm primary" id="psave">Gebruik deze kleur</button><button class="btn sm" id="pcancel">Terug</button>`:`${cp?`<button class="btn sm" id="wpe">Merk & code</button>`:""}${(sw.pts||sw.mask)&&assets?`<button class="btn sm" id="wref" title="Voorwerpen eruit halen of stukken toevoegen">Verfijnen</button>`:""}<button class="btn sm" id="wren">Naam / m²</button><button class="btn sm danger" id="wdel" aria-label="Muur verwijderen">✕</button>`}</div></div>
     <div class="tabs2" role="tablist"><button role="tab" class="${tab==="eigen"?"on":""}" data-tab="eigen">Jullie kleuren${pals.length?` · ${pals.length}`:""}</button><button role="tab" class="${tab==="insp"?"on":""}" data-tab="insp">Inspiratie</button><button role="tab" class="${tab==="vrij"?"on":""}" data-tab="vrij">Eigen kleur</button></div>
     ${tab==="eigen"?`<div class="palgrid">${sw_("repeating-linear-gradient(45deg,#2a3331 0 6px,#1b2221 6px 12px)","Origineel",'data-paint=""',!curPaint&&!V.preview)}${pals.map(pa=>sw_(pa.hex,pa.name||pa.hex,`data-paint="${pa.id}"`,curPaint===pa.id&&!V.preview)).join("")}</div>
       ${pals.length?"":`<p class="small muted">Nog geen eigen kleuren. Kies er een bij Inspiratie of Eigen kleur, en sla hem op met merk en kleurcode.</p>`}`:""}
