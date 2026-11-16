@@ -1,27 +1,31 @@
 <title>Ons Nieuwe Huis</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
 /* Layout: sticky kop met tab-strip; kaarten alleen waar iets een los object is. Labels als stukjes schilderstape. */
 :root{
-  /* palet gemeten uit de Pinterest-verzameling 'woonkamer': linnen, greige, eiken, olijf, espresso */
-  --paper:#F3EFE9; --card:#FCFAF7; --ink:#2A211B; --muted:#74685E; --line:#E3DCD2; --soft:#EBE5DC;
-  --tape:#6B6440; --tape-ink:#FFFFFF; --tape-soft:#E8E3D2; --oak:#9C7E61;
-  --ok:#5E7A4A; --ok-soft:#E4EAD9; --warn:#9A6A2C; --warn-soft:#F3E6D2; --bad:#A8432F;
-  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  /* Layout: donker-eerst zoals VibeMove; kaarten r=20 met haarlijn, serif koppen met cursieve nadruk, zwevende iconenbalk onderin.
+     Kleuren uit de Pinterest-verzameling 'woonkamer': espresso, olijf, eiken, linnen; terracotta als accent. */
+  --paper:#171512; --card:#221F1B; --card2:#2B2722; --ink:#F3EEE7; --muted:#A79D90; --line:#36312B; --soft:#2C2823;
+  --tape:#E0703F; --tape-ink:#1C0F08; --tape-soft:#3B261B; --olive:#5B5739; --olive-ink:#F6F1E8; --oak:#C49A6C;
+  --btn:#F3EEE7; --btn-ink:#1B1814;
+  --ok:#A6BE8F; --ok-soft:#26301F; --warn:#E3A85C; --warn-soft:#3A2C18; --bad:#E8846E;
+  --f-display:"Instrument Serif", Georgia, "Times New Roman", serif;
   --f-body:"Instrument Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
   --f-mono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
-  --r:16px;
+  --r:20px; color-scheme:dark;
 }
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --paper:#16120F; --card:#201A16; --ink:#EFE8DF; --muted:#A89C8F; --line:#3A302A; --soft:#2A231E;
-  --tape:#C2B98A; --tape-ink:#1E1A10; --tape-soft:#3A3524; --oak:#C4A07C;
-  --ok:#9DB98A; --ok-soft:#24301E; --warn:#D9A866; --warn-soft:#3A2C18; --bad:#E58A72; color-scheme:dark}}
-:root[data-theme="dark"]{
-  --paper:#16120F; --card:#201A16; --ink:#EFE8DF; --muted:#A89C8F; --line:#3A302A; --soft:#2A231E;
-  --tape:#C2B98A; --tape-ink:#1E1A10; --tape-soft:#3A3524; --oak:#C4A07C;
-  --ok:#9DB98A; --ok-soft:#24301E; --warn:#D9A866; --warn-soft:#3A2C18; --bad:#E58A72; color-scheme:dark}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
+  --paper:#F3EFE9; --card:#FCFAF7; --card2:#F1ECE4; --ink:#2A211B; --muted:#74685E; --line:#E3DCD2; --soft:#EBE5DC;
+  --tape:#C4582B; --tape-ink:#FFFFFF; --tape-soft:#F5E1D5; --olive:#6B6440; --olive-ink:#FFFFFF; --oak:#9C7E61;
+  --btn:#2A211B; --btn-ink:#FCFAF7;
+  --ok:#5E7A4A; --ok-soft:#E4EAD9; --warn:#9A6A2C; --warn-soft:#F3E6D2; --bad:#A8432F; color-scheme:light}}
+:root[data-theme="light"]{
+  --paper:#F3EFE9; --card:#FCFAF7; --card2:#F1ECE4; --ink:#2A211B; --muted:#74685E; --line:#E3DCD2; --soft:#EBE5DC;
+  --tape:#C4582B; --tape-ink:#FFFFFF; --tape-soft:#F5E1D5; --olive:#6B6440; --olive-ink:#FFFFFF; --oak:#9C7E61;
+  --btn:#2A211B; --btn-ink:#FCFAF7;
+  --ok:#5E7A4A; --ok-soft:#E4EAD9; --warn:#9A6A2C; --warn-soft:#F3E6D2; --bad:#A8432F; color-scheme:light}
 *{box-sizing:border-box}
 html,body{background:var(--paper);color:var(--ink)}
 body{font-family:var(--f-body);font-size:15px;line-height:1.5}
@@ -147,14 +151,14 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:60
 #viewer .hint{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:rgba(0,0,0,.7);padding:8px 12px;border-radius:8px;font-size:13px;max-width:calc(100% - 24px);text-align:center}
 #viewer .vs{background:#141A19;padding:12px max(12px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:10px;max-height:46vh;overflow-y:auto;border-top:1px solid #26302E}
 #viewer .btn{background:#1E2625;border-color:#2F3A38;color:#E8EEEC}
-#viewer .btn.primary{background:#7B9BF0;border-color:#7B9BF0;color:#0D1424}
+#viewer .btn.primary{background:#E0703F;border-color:#E0703F;color:#1C0F08}
 #viewer select{background:#1E2625;border-color:#2F3A38;color:#E8EEEC;width:auto}
 #viewer .wchip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;border:1px solid #2F3A38;background:#1E2625;cursor:pointer;font-size:13px;font-weight:600}
-#viewer .wchip.on{border-color:#7B9BF0;box-shadow:0 0 0 2px #7B9BF0 inset}
+#viewer .wchip.on{border-color:#E0703F;box-shadow:0 0 0 2px #E0703F inset}
 #viewer .pal{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
 #viewer .pal button{flex:none;width:54px;border:0;background:none;padding:0;cursor:pointer;color:#C9D3D0;font-size:10px;text-align:center}
 #viewer .pal .sw{display:block;width:54px;height:40px;border-radius:6px;border:2px solid #2F3A38;margin-bottom:3px}
-#viewer .pal button.on .sw{border-color:#fff;box-shadow:0 0 0 2px #7B9BF0}
+#viewer .pal button.on .sw{border-color:#fff;box-shadow:0 0 0 2px #E0703F}
 #viewer .muted{color:#94A39F}
 .picgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
 .pic{aspect-ratio:3/2;border-radius:8px;border:1px solid var(--line);background-size:cover;background-position:center;cursor:zoom-in;position:relative;padding:0}
@@ -176,7 +180,7 @@ details.fold.card:not([open]){padding-block:12px}
 .rthumb span{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);color:#fff;font-size:11px;padding:2px 5px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:0 0 6px 6px}
 #viewer .rchip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:999px;border:1px solid #2F3A38;background:#1E2625;cursor:pointer;font-size:13px;font-weight:600;color:#E8EEEC}
 #viewer .rchip img{width:44px;height:22px;object-fit:cover;border-radius:999px}
-#viewer .rchip.on{border-color:#7B9BF0;box-shadow:0 0 0 2px #7B9BF0 inset}
+#viewer .rchip.on{border-color:#E0703F;box-shadow:0 0 0 2px #E0703F inset}
 #viewer .spin{position:absolute;inset:0;display:grid;place-items:center;font-size:14px;color:#94A39F}
 #viewer .split{position:absolute;top:0;bottom:0;width:0;pointer-events:none}
 #viewer .split::before{content:"";position:absolute;top:0;bottom:0;left:-1px;width:2px;background:#fff;box-shadow:0 0 6px rgba(0,0,0,.5)}
@@ -185,40 +189,133 @@ details.fold.card:not([open]){padding-block:12px}
 #viewer .split .tg.l{right:10px}#viewer .split .tg.r{left:10px}
 #viewer .seg{display:inline-flex;border:1px solid #2F3A38;border-radius:8px;overflow:hidden}
 #viewer .seg button{background:#1E2625;border:0;color:#C9D3D0;padding:6px 12px;font-weight:600;font-size:13px;cursor:pointer}
-#viewer .seg button.on{background:#7B9BF0;color:#0D1424}
+#viewer .seg button.on{background:#E0703F;color:#1C0F08}
 #viewer .wallhead{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 #viewer .bigsw{width:56px;height:56px;border-radius:10px;border:2px solid #2F3A38;flex:none}
 #viewer .wn{font-family:var(--f-display);font-weight:700;font-size:18px;line-height:1.2}
 #viewer .tabs2{display:flex;gap:2px;border-bottom:1px solid #26302E}
 #viewer .tabs2 button{background:none;border:0;border-bottom:2px solid transparent;color:#94A39F;padding:6px 10px;font-weight:600;font-size:13px;cursor:pointer}
-#viewer .tabs2 button.on{color:#E8EEEC;border-bottom-color:#7B9BF0}
+#viewer .tabs2 button.on{color:#E8EEEC;border-bottom-color:#E0703F}
 #viewer .palgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(58px,1fr));gap:6px}
 #viewer .swb{background:none;border:0;padding:0;cursor:pointer;color:#C9D3D0;font-size:11px;text-align:center;min-width:0}
 #viewer .swb .sw{display:block;height:36px;border-radius:8px;border:2px solid #2F3A38;margin-bottom:3px;transition:transform .12s}
 #viewer .swb:hover .sw{transform:translateY(-2px)}
-#viewer .swb.on .sw{border-color:#fff;box-shadow:0 0 0 2px #7B9BF0}
+#viewer .swb.on .sw{border-color:#fff;box-shadow:0 0 0 2px #E0703F}
 #viewer .swb .nm{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #viewer details.more summary{cursor:pointer;color:#94A39F;font-size:13px}
-#viewer .btn.primary[aria-pressed="true"]{background:#7B9BF0}
+#viewer .btn.primary[aria-pressed="true"]{background:#E0703F}
 .lb{position:fixed;inset:0;z-index:45;background:rgba(5,8,8,.9);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;color:#E8EEEC}
 .lb canvas{max-width:100%;max-height:72vh;cursor:crosshair;border-radius:6px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ===== VibeMove-stijl ===== */
+body{font-size:15px;letter-spacing:.005em}
+h1,h2,h3{font-family:var(--f-display);font-weight:400;letter-spacing:-.005em}
+h1{font-size:clamp(30px,6vw,44px);line-height:1.08}
+h2{font-size:24px}
+h3{font-size:19px}
+h1 em,h2 em,.brand em{font-style:italic}
+header.top{background:var(--paper);border-bottom:0}
+.topbar{padding-block:14px 8px}
+.brand{font-family:var(--f-display);font-weight:400;font-size:24px;gap:10px;white-space:nowrap}
+.topbar{flex-wrap:wrap}
+@media (max-width:520px){.count .lg{display:none}}
+.brand .key{width:34px;height:34px;border-radius:50%;background:var(--card2);color:var(--ink);border:1px solid var(--line)}
+.count{background:var(--card2);border:1px solid var(--line);border-radius:999px;padding:6px 12px}
+.count b{color:var(--tape)}
+nav.tabs{gap:6px;padding:4px;background:var(--card);border:1px solid var(--line);border-radius:999px;margin-bottom:10px;width:max-content;max-width:100%}
+nav.tabs a{display:flex;align-items:center;gap:7px;border:0;border-radius:999px;padding:8px 14px;color:var(--muted);font-size:14px}
+nav.tabs a svg{flex:none}
+nav.tabs a.on{background:var(--tape);color:var(--tape-ink)}
+nav.tabs a:hover:not(.on){color:var(--ink);background:var(--card2)}
+@media (max-width:760px){
+  nav.tabs{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:30;margin:0;padding:6px;gap:2px;justify-content:space-between;width:calc(100% - 24px);max-width:440px;background:color-mix(in srgb,var(--card) 92%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 8px 30px rgba(0,0,0,.35)}
+  nav.tabs a{padding:0;width:44px;height:44px;justify-content:center}
+  nav.tabs a span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  main{padding-bottom:110px}
+}
+.card{border-radius:var(--r);background:var(--card);border-color:var(--line)}
+.btn{border-radius:999px;background:var(--card2);border-color:var(--line);padding:8px 16px;font-weight:600}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--btn);border-color:var(--btn);color:var(--btn-ink)}
+.btn.sm{padding:5px 12px}
+.tape{clip-path:none;border-radius:999px;background:transparent;border:1px solid var(--line);color:var(--muted);font-weight:600;padding:2px 10px}
+.tape.solid{background:var(--tape);border-color:var(--tape);color:var(--tape-ink)}
+.tape.ok{background:var(--ok-soft);border-color:transparent;color:var(--ok)}
+.tape.warn{background:var(--warn-soft);border-color:transparent;color:var(--warn)}
+.chip{border-radius:999px;background:var(--card);border-color:var(--line);padding:6px 14px}
+.chip.on{background:var(--olive);border-color:var(--olive);color:var(--olive-ink)}
+.bar{background:var(--card2)}
+.bar>i,.bar.ok>i{background:var(--tape)}
+.eyebrow{letter-spacing:.06em}
+input[type=text],input[type=number],input[type=date],input[type=url],select,textarea{background:var(--card2);border-color:var(--line);border-radius:14px;padding:10px 14px}
+.empty{border-radius:var(--r);border-color:var(--line)}
+.sheet{background:var(--card);border-radius:24px;border:1px solid var(--line)}
+.modal{background:rgba(8,6,4,.6)}
+.room{border-radius:var(--r)}
+.room .ph .tape{border:0}
+.daybox{border-radius:var(--r);background:var(--card)}
+.task{border-top-color:var(--line)}
+.task input[type=checkbox]{accent-color:var(--tape)}
+.toast{border-radius:999px;background:var(--ink);color:var(--paper)}
+details.fold>summary h2{font-size:24px}
+/* Overzicht */
+.home{gap:26px}
+.herocard{background:var(--olive);color:var(--olive-ink);border-radius:24px;padding:24px 22px 20px;display:flex;flex-direction:column;gap:12px;position:relative;overflow:hidden}
+.herocard h1{font-size:clamp(32px,6.5vw,46px);max-width:15ch}
+.herocard p{max-width:52ch;opacity:.85}
+.herocard::after{content:"";position:absolute;right:-30px;top:-30px;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,var(--oak) 0 30%,transparent 31%),repeating-conic-gradient(from 0deg,var(--oak) 0 6deg,transparent 6deg 18deg);opacity:.55;-webkit-mask:radial-gradient(circle,#000 0 62%,transparent 63%);mask:radial-gradient(circle,#000 0 62%,transparent 63%)}
+.pillw{background:#FFFFFF;color:#1B1814;border:0;justify-content:center;padding:14px 18px;font-size:16px;margin-top:6px;width:100%;max-width:440px}
+.pillw:hover{background:#F1ECE4}
+.sechead{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.seeall{color:var(--ink);text-decoration:none;font-size:14px;font-weight:500;white-space:nowrap}
+.seeall span{margin-left:4px;font-size:18px}
+.tiles{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;margin-inline:calc(-1 * max(16px, env(safe-area-inset-left,0px)));padding-inline:max(16px, env(safe-area-inset-left,0px))}
+.tiles::-webkit-scrollbar{display:none}
+.tile{flex:none;width:112px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:8px;display:flex;flex-direction:column;gap:8px;text-decoration:none;color:var(--ink)}
+.tile .timg{display:block;aspect-ratio:1;border-radius:12px;background:var(--card2) center/cover}
+.tile .tl{font-size:13px;color:var(--muted);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile:hover .tl{color:var(--ink)}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.stat .ring{color:var(--muted)}
+.stat .sv{font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}
+.stat .su{color:var(--muted);font-size:13px}
+@media (max-width:420px){.stat .sv{font-size:17px}}
+.list{display:flex;flex-direction:column;gap:8px}
+.li{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:10px 12px}
+.lic{flex:none;width:44px;height:44px;border-radius:12px;background:var(--olive);color:var(--olive-ink);display:grid;place-items:center;font-size:18px}
+.lt{flex:1;min-width:0;cursor:pointer}
+.ld{font-size:12px;color:var(--muted)}
+.ln{font-family:var(--f-display);font-style:italic;font-size:19px;line-height:1.2}
+.lr{font-size:12px;color:var(--muted)}
+.pillbtn{flex:none;border:1px solid var(--line);background:var(--card2);color:var(--ink);border-radius:999px;padding:6px 14px;font-weight:600;cursor:pointer}
+.pillbtn:hover{background:var(--tape);border-color:var(--tape);color:var(--tape-ink)}
+/* viewer in dezelfde stijl */
+#viewer{background:#141210}
+#viewer .vt{background:#141210}
+#viewer .vs{background:#1C1916;border-top-color:#2E2924;border-radius:22px 22px 0 0}
+#viewer .btn{background:#2A2621;border-color:#38322B;color:#F3EEE7;border-radius:999px}
+#viewer .btn.primary{background:#F3EEE7;border-color:#F3EEE7;color:#1B1814}
+#viewer .wchip,#viewer .rchip{background:#2A2621;border-color:#38322B}
+#viewer .wn{font-family:var(--f-display);font-weight:400;font-size:22px}
+#viewer select{background:#2A2621;border-color:#38322B;border-radius:999px}
 </style>
 
 <header class="top">
   <div class="wrap">
     <div class="topbar">
-      <div class="brand"><span class="key" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3 20 3m-3 3 3 3m-6-0 2 2"/></svg></span>Ons Nieuwe Huis</div>
+      <div class="brand"><span class="key" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3 20 3m-3 3 3 3m-6-0 2 2"/></svg></span><span>Ons <em>nieuwe</em> huis</span></div>
       <div class="count" id="countTop"></div>
     </div>
     <nav class="tabs" id="tabs">
-      <a href="#overzicht" data-r="overzicht">Overzicht</a>
-      <a href="#plattegrond" data-r="plattegrond">Plattegrond</a>
-      <a href="#kamers" data-r="kamers">Kamers</a>
-      <a href="#planning" data-r="planning">Planning</a>
-      <a href="#kosten" data-r="kosten">Kosten & bestellen</a>
-      <a href="#smarthome" data-r="smarthome">Smarthome</a>
-      <a href="#tips" data-r="tips">Tips</a>
+      <a href="#overzicht" data-r="overzicht" aria-label="Overzicht"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5h-5v5H5a1 1 0 0 1-1-1z"/></svg><span>Overzicht</span></a>
+      <a href="#plattegrond" data-r="plattegrond" aria-label="Plattegrond"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M11 5v6H4M11 15v4M15 11h5M11 11h1"/></svg><span>Plattegrond</span></a>
+      <a href="#kamers" data-r="kamers" aria-label="Kamers"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 20V5a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v15M4 20h16"/><circle cx="14.5" cy="12" r=".9"/></svg><span>Kamers</span></a>
+      <a href="#planning" data-r="planning" aria-label="Planning"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16M8 14h2M12 14h2M8 17h2"/></svg><span>Planning</span></a>
+      <a href="#kosten" data-r="kosten" aria-label="Kosten"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M16 12.5h4M4 9h16"/></svg><span>Kosten</span></a>
+      <a href="#smarthome" data-r="smarthome" aria-label="Smarthome"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5"/><path d="M8.5 15a5 5 0 0 1 7 0M10.5 17.2a2 2 0 0 1 3 0"/><circle cx="12" cy="19.2" r=".6"/></svg><span>Smarthome</span></a>
+      <a href="#tips" data-r="tips" aria-label="Tips"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z"/></svg><span>Tips</span></a>
     </nav>
   </div>
 </header>
@@ -339,37 +436,38 @@ function doRender(){
 }
 function noDb(){return `<div class="card stack"><h2>Opslag niet beschikbaar</h2><p class="muted">Deze app bewaart alles in een gedeelde opslag. Die is in deze weergave niet bereikbaar. Open de app ingelogd op claude.ai, of vraag de eigenaar om je toegang als Editor te geven.</p></div>`}
 function renderCount(){const s=settings();const k=daysTo(s.keyDate),m=daysTo(s.moveDate);
-  $("#countTop").innerHTML=k>0?`sleutel over <b>${k}</b> d · verhuizen over <b>${m}</b> d`:m>0?`verhuizen over <b>${m}</b> d`:`we wonen er!`}
+  $("#countTop").innerHTML=k>0?`🔑 <b>${k}</b> d<span class="lg"> · verhuizen over <b>${m}</b> d</span>`:m>0?`verhuizen over <b>${m}</b> d`:`we wonen er!`}
 
 /* ---------- inklapbare blokken ---------- */
 const fold=(key,title,meta,body,def=true,cls="")=>`<details class="fold ${cls}" data-fold="${key}" ${lsGet("fold:"+key,def)?"open":""}><summary><h2>${title}</h2>${meta!==""&&meta!=null?`<span class="tape">${meta}</span>`:""}<span class="chev" aria-hidden="true"></span></summary><div class="foldbody">${body}</div></details>`;
 document.addEventListener("toggle",e=>{const d=e.target;if(d&&d.dataset&&d.dataset.fold)lsSet("fold:"+d.dataset.fold,d.open)},true);
 /* ---------- Overzicht ---------- */
+function ring(pct,label,unit,icon){const r=18,c=2*Math.PI*r,p=Math.max(0,Math.min(1,pct||0));
+  return `<div class="stat"><svg class="ring" viewBox="0 0 44 44" width="46" height="46" aria-hidden="true"><circle cx="22" cy="22" r="${r}" fill="none" stroke="var(--line)" stroke-width="3"/><circle cx="22" cy="22" r="${r}" fill="none" stroke="var(--tape)" stroke-width="3" stroke-linecap="round" stroke-dasharray="${c*p} ${c}" transform="rotate(-90 22 22)"/><text x="22" y="26" text-anchor="middle" font-size="11" fill="currentColor">${icon}</text></svg><div><span class="sv">${label}</span> <span class="su">${unit}</span></div></div>`}
 function viewHome(){
   const s=settings();const k=daysTo(s.keyDate),m=daysTo(s.moveDate);
-  const open=S.tasks.filter(t=>!t.done);
-  const nxt=[...open].sort(taskSort).slice(0,7);
+  const open=S.tasks.filter(t=>!t.done);const all=S.tasks.length,done=all-open.length;
+  const nxt=[...open].sort(taskSort).slice(0,6);
   const cost=costModel();
-  const phaseStats=PHASES.map(p=>{const ts=S.tasks.filter(t=>(t.phase||"voor")===p.id);const d=ts.filter(t=>t.done).length;return{p,n:ts.length,d}});
-  return `<div class="stack">
-  <div class="hero">
-    <div class="daybox"><div class="eyebrow">Sleutel · ${esc(dfmt(s.keyDate))}</div><div class="big num">${k>0?k:"✓"}</div><div class="muted small">${k>0?"dagen tot de sleuteloverdracht":"sleutel is binnen"}</div></div>
-    <div class="daybox"><div class="eyebrow">Verhuisdag · ${esc(dfmt(s.moveDate))}</div><div class="big num">${m>0?m:"✓"}</div><div class="muted small">${m>0?"dagen tot de verhuizing":"verhuisd"}</div></div>
-    <div class="daybox"><div class="eyebrow">Budget</div><div class="big num" style="font-size:32px">${eur(cost.planned)}</div><div class="muted small">begroot${s.budget?` van ${eur(s.budget)}`:""} · ${eur(cost.spent)} uitgegeven</div>${s.budget?`<div class="bar" style="margin-top:8px"><i style="width:${Math.min(100,cost.planned/s.budget*100)}%"></i></div>`:""}</div>
-  </div>
-  <div class="grid g2">
-    <section class="card"><div class="row between"><h2>Eerstvolgende taken</h2><a class="btn sm" href="#planning">Planning</a></div>
-      <div style="margin-top:8px">${nxt.length?nxt.map(taskRow).join(""):`<div class="empty">Nog geen open taken. Voeg ze toe in Planning of vanuit Tips.</div>`}</div></section>
-    <section class="card stack"><h2>Voortgang per fase</h2>
-      ${phaseStats.map(x=>`<div><div class="row between small"><span><b>${esc(x.p.name)}</b> <span class="muted">${esc(x.p.sub)}</span></span><span class="num muted">${x.d}/${x.n}</span></div><div class="bar ok"><i style="width:${x.n?x.d/x.n*100:0}%"></i></div></div>`).join("")}
-    </section>
-  </div>
-  <section class="stack"><div class="row between"><h2>Kamers</h2><a class="btn sm" href="#kamers">Alle kamers</a></div>
-    ${S.rooms.length?`<div class="grid g3">${sortRooms().map(roomCard).join("")}</div>`:`<div class="empty">Nog geen kamers. Ga naar <a href="#kamers">Kamers</a> en laad jullie 360°-foto's in. Dan komt er per foto een kamer bij.</div>`}
+  let wallsN=0,wallsC=0;S.photos.forEach(p=>{const v=activeVar(p);(p.walls||[]).filter(w=>!w.exclude).forEach(w=>{wallsN++;if((v.colors||{})[w.id])wallsC++})});
+  const head=k>0?`Nog <em>${k} ${k===1?"dag":"dagen"}</em> tot de <em>sleutel</em>.`:m>0?`Nog <em>${m} ${m===1?"dag":"dagen"}</em> tot de <em>verhuizing</em>.`:`Welkom <em>thuis</em>.`;
+  const sub=k>0?`Op ${esc(dfmt(s.keyDate))} krijgen jullie de sleutel, op ${esc(dfmt(s.moveDate))} gaat alles over. Er staan nog ${open.length} taken open.`:m>0?`Op ${esc(dfmt(s.moveDate))} gaat alles over. Er staan nog ${open.length} taken open.`:`Er staan nog ${open.length} taken open voor de eerste weken en later.`;
+  const icon=t=>{const ph=t.phase||"voor";return{voor:"✎",sleutel:"⚿",verhuis:"⛟",na:"⌂",later:"✿"}[ph]||"•"};
+  return `<div class="stack home">
+  <div class="herocard"><h1>${head}</h1><p>${sub}</p><a class="btn pillw" href="#planning">Bekijk de planning</a></div>
+  <section class="stack" style="gap:10px"><div class="sechead"><h2>Kamers</h2><a href="#kamers" class="seeall">Alles bekijken <span aria-hidden="true">›</span></a></div>
+    ${S.rooms.length?`<div class="tiles">${sortRooms().map(r=>{const ph=S.photos.find(p=>p.roomId===r.id&&p.thumbId);const pic=S.pics.find(q=>q.roomId===r.id);const th=ph?ph.thumbId:pic?(pic.thumbId||pic.assetId):null;
+      return `<a class="tile" href="#kamer-${r.id}"><span class="timg" style="${th?`background-image:url('${assetUrl(th)}')`:""}"></span><span class="tl">${esc(r.name)}</span></a>`}).join("")}</div>`:`<div class="empty">Nog geen kamers.</div>`}
   </section>
-  <section class="card"><div class="row between"><h2>Datums</h2></div>
-    <div class="row" style="margin-top:8px"><label class="f">Sleutel<input type="date" id="set-key" value="${esc(s.keyDate)}" data-set="keyDate"></label><label class="f">Verhuisdag<input type="date" id="set-move" value="${esc(s.moveDate)}" data-set="moveDate"></label></div>
-  </section></div>`;
+  <section class="stack" style="gap:10px"><div class="sechead"><h2>Voortgang</h2><a href="#kosten" class="seeall">Kosten <span aria-hidden="true">›</span></a></div>
+    <div class="stats">${ring(all?done/all:0,`${done}/${all}`,"taken","✓")}${ring(s.budget?cost.planned/s.budget:0,eur(cost.planned),s.budget?`van ${eur(s.budget)}`:"begroot","€")}${ring(wallsN?wallsC/wallsN:0,`${wallsC}/${wallsN}`,"muren met kleur","◐")}</div>
+  </section>
+  <section class="stack" style="gap:10px"><div class="sechead"><h2>Eerstvolgende</h2><a href="#planning" class="seeall">Planning <span aria-hidden="true">›</span></a></div>
+    ${nxt.length?`<div class="list">${nxt.map(t=>{const r=t.roomId?byId("rooms",t.roomId):null;const ph=PHASES.find(p=>p.id===(t.phase||"voor"));
+      return `<div class="li"><span class="lic" aria-hidden="true">${icon(t)}</span><div class="lt" data-edit-task="${t.id}"><div class="ld">${t.date?esc(dfmt(t.date)):esc(ph?ph.name:"")}</div><div class="ln">${esc(t.title)}</div>${r?`<div class="lr">${esc(r.name)}</div>`:""}</div><button class="pillbtn" data-toggle="${t.id}">Klaar</button></div>`}).join("")}</div>`:`<div class="empty">Geen open taken. Voeg ze toe in Planning of vanuit Tips.</div>`}
+  </section>
+  ${fold("h-datums","Datums","",`<div class="row"><label class="f">Sleutel<input type="date" id="set-key" value="${esc(s.keyDate)}" data-set="keyDate"></label><label class="f">Verhuisdag<input type="date" id="set-move" value="${esc(s.moveDate)}" data-set="moveDate"></label></div>`,false,"card")}
+  </div>`;
 }
 function taskSort(a,b){const pi=x=>PHASES.findIndex(p=>p.id===(x.phase||"voor"));return pi(a)-pi(b)||String(a.date||"9999").localeCompare(String(b.date||"9999"))||(a.createdAt||0)-(b.createdAt||0)}
 function taskRow(t){
