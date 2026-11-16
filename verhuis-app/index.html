@@ -158,6 +158,8 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:60
 .picgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
 .pic{aspect-ratio:3/2;border-radius:8px;border:1px solid var(--line);background-size:cover;background-position:center;cursor:zoom-in;position:relative;padding:0}
 .pic span{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);color:#fff;font-size:12px;padding:3px 6px;text-align:left;border-radius:0 0 8px 8px}
+.pinbtn{background:#E60023;border-color:#E60023;color:#fff}
+.pinbtn:hover{border-color:#ad081b}
 details.fold>summary{list-style:none;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;padding-block:2px}
 details.fold>summary::-webkit-details-marker{display:none}
 details.fold>summary h2{flex:0 1 auto}
@@ -400,7 +402,7 @@ function viewRoom(id){
   return `<div class="stack">
   <div class="row between"><div class="stack" style="gap:6px"><a href="#kamers" class="small">← Kamers</a><div class="row"><span class="dot" style="width:22px;height:22px;background:${esc(r.color||"#2D5BD0")}"></span><h1>${esc(r.name)}</h1></div>
   <p class="muted">${r.style?`Stijl: <b style="color:var(--ink)">${esc(r.style)}</b>`:"Nog geen stijl gekozen"}${r.notes?` · ${esc(r.notes)}`:""}</p></div>
-  <div class="row"><button class="btn" data-act="editRoom" data-id="${id}">Bewerken</button><button class="btn" data-act="exportRoom" data-id="${id}" ${downloads?"":"disabled title='Downloaden is hier niet beschikbaar'"}>Download deze kamer</button></div></div>
+  <div class="row">${r.pinterest?`<a class="btn pinbtn" href="${esc(r.pinterest)}" target="_blank" rel="noopener">Pinterest-verzameling ↗</a>`:`<button class="btn" data-act="setPin" data-id="${id}">+ Pinterest-verzameling</button>`}<button class="btn" data-act="editRoom" data-id="${id}">Bewerken</button><button class="btn" data-act="exportRoom" data-id="${id}" ${downloads?"":"disabled title='Downloaden is hier niet beschikbaar'"}>Download deze kamer</button></div></div>
 
   ${fold("r360","360°-foto's",ph.length||"",`${canUpload?`<div class="row" style="justify-content:flex-end"><label class="btn sm">360°-foto toevoegen<input type="file" accept="image/*" hidden data-pano-room="${id}"></label></div>`:""}
     ${ph.length?`<div class="grid g3">${ph.map(p=>`<div class="card room" data-open-pano="${p.id}"><div class="ph" style="background-image:url('${assetUrl(p.thumbId)}')"><span class="tape solid">Open in 360°</span></div><div class="b"><b>${esc(p.name||"Foto")}</b><span class="small muted">${(p.walls||[]).filter(w=>!w.exclude).length} muren · ${(p.variants||[]).length} variant${(p.variants||[]).length===1?"":"en"}${p.w?` · ${p.w}×${p.h}`:""}</span>${(p.renders||[]).length?`<div class="rgal">${(p.renders||[]).map(r=>`<button class="rthumb" data-open-render="${p.id}|${r.id}" title="${esc(r.name)}" style="background-image:url('${assetUrl(r.thumbId)}')"><span>${esc(r.name)}</span></button>`).join("")}</div>`:""}
@@ -625,7 +627,8 @@ document.addEventListener("click",async e=>{
   if(d.dlPano){e.stopPropagation();dlPano(d.dlPano);return}
   const a=d.act;
   if(a==="newRoom"){const v=await form("Nieuwe kamer",[{k:"name",label:"Naam",full:true},{k:"style",label:"Stijl",ph:"bijv. Japandi, warm minimalistisch"},{k:"color",label:"Labelkleur (voor dozen)",type:"color",def:ROOM_COLORS[S.rooms.length%ROOM_COLORS.length]},{k:"notes",label:"Notities",type:"textarea",full:true}]);if(v&&v.name){const id=await safe(()=>add("rooms",{...v,order:S.rooms.length}));if(id)location.hash="#kamer-"+id}}
-  if(a==="editRoom"){const r=byId("rooms",d.id);const v=await form("Kamer bewerken",[{k:"name",label:"Naam",full:true},{k:"style",label:"Stijl"},{k:"color",label:"Labelkleur",type:"color"},{k:"order",label:"Volgorde",type:"number"},{k:"notes",label:"Notities",type:"textarea",full:true}],r);if(v)await safe(()=>upd("rooms",r.id,v))}
+  if(a==="setPin"){const r=byId("rooms",d.id);const v=await form("Pinterest-verzameling",[{k:"pinterest",label:"Link naar de verzameling voor "+r.name,type:"url",full:true,ph:"https://nl.pinterest.com/niskastoker/huisje-zevenaar/…/"}],r);if(v&&v.pinterest){if(!/^https?:\/\//.test(v.pinterest)){toast("Plak een volledige link die begint met https://");return}await safe(()=>upd("rooms",r.id,{pinterest:v.pinterest.trim()}))}}
+  if(a==="editRoom"){const r=byId("rooms",d.id);const v=await form("Kamer bewerken",[{k:"name",label:"Naam",full:true},{k:"style",label:"Stijl"},{k:"color",label:"Labelkleur",type:"color"},{k:"order",label:"Volgorde",type:"number"},{k:"pinterest",label:"Pinterest-verzameling (link)",type:"url",full:true,ph:"https://nl.pinterest.com/…/…/woonkamer/"},{k:"notes",label:"Notities",type:"textarea",full:true}],r);if(v)await safe(()=>upd("rooms",r.id,v))}
   if(a==="delRoom"){const r=byId("rooms",d.id);if(await confirmBox(`Kamer “${r.name}” verwijderen? Foto's, moodboard en taken blijven bestaan maar zijn dan niet meer aan een kamer gekoppeld.`)){await safe(()=>del("rooms",r.id));location.hash="#kamers"}}
   if(a==="exportRoom")exportRoom(d.id);
   if(a==="moodLink"){const v=await form("Pinterest-pin of link",[{k:"href",label:"Link",type:"url",full:true,ph:"https://pin.it/…"},{k:"caption",label:"Omschrijving",full:true}]);if(v&&v.href)await safe(()=>add("mood",{roomId:d.id,type:"link",href:v.href,caption:v.caption}))}
