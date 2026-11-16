@@ -421,7 +421,8 @@ function viewRoom(id){
     return fold("rfoto","Foto's",pics.length||"",`${canUpload?`<div class="row" style="justify-content:flex-end"><label class="btn sm">Foto's toevoegen<input type="file" accept="image/*" multiple hidden data-pic-room="${id}"></label></div>`:""}
     ${pics.length?`<div class="picgrid">${pics.map((x,i)=>`<button class="pic" data-pic="${x.id}" style="background-image:url('${assetUrl(x.thumbId||x.assetId)}')" aria-label="${esc(x.caption||"Foto "+(i+1))}">${x.caption?`<span>${esc(x.caption)}</span>`:""}</button>`).join("")}</div>`:`<div class="empty">Nog geen gewone foto's van ${esc(r.name)}.</div>`}`,false)})()}
   ${fold("rmood","Moodboard",mood.length||"",`<div class="row" style="justify-content:flex-end">${canUpload?`<label class="btn sm">Afbeeldingen<input type="file" accept="image/*" multiple hidden data-mood-img="${id}"></label>`:""}<button class="btn sm" data-act="moodLink" data-id="${id}">Pinterest / link</button><button class="btn sm" data-act="moodSwatch" data-id="${id}">Kleurstaal</button><button class="btn sm" data-act="moodNote" data-id="${id}">Notitie</button></div>
-   ${mood.length?`<div class="mood">${mood.map(moodItem).join("")}</div>`:`<div class="empty">Zet hier Pinterest-links, screenshots, kleurstalen en notities voor ${esc(r.name)}. Tik op een afbeelding om er een kleur uit te pakken.</div>`}`,true)}
+   ${mood.length?`<div class="mood">${mood.map(moodItem).join("")}</div>`:`<div class="empty">Zet hier Pinterest-links, screenshots, kleurstalen en notities voor ${esc(r.name)}. Tik op een afbeelding om er een kleur uit te pakken.</div>`}
+   ${canUpload?`<p class="small muted"><b>Snel vanuit Pinterest:</b> klik met rechts op een pin-afbeelding, kies <i>Afbeelding kopiëren</i> en druk hier op Ctrl+V (Mac: Cmd+V). De foto komt dan op dit moodboard. Op de telefoon: sla de afbeelding op en voeg hem toe met <b>Afbeeldingen</b>.</p>`:""}`,true)}
 
   <div class="grid g2">
    ${fold("rtaken","Taken",tasks.length?`${tasks.filter(t=>t.done).length}/${tasks.length}`:"",`<div>${tasks.map(taskRow).join("")||`<p class="muted small">Nog geen taken voor deze kamer.</p>`}</div>
@@ -666,6 +667,16 @@ document.addEventListener("submit",async e=>{
   if(f.dataset.addtaskPhase||f.dataset.addtaskRoom){e.preventDefault();const inp=f.querySelector("input");const title=inp.value.trim();if(!title)return;inp.value="";
     await safe(()=>add("tasks",{title,phase:f.dataset.addtaskPhase||"na",roomId:f.dataset.addtaskRoom||"",date:"",done:false}))}
   if(f.id==="chatform"){e.preventDefault();sendChat()}
+});
+/* afbeelding plakken (Ctrl/Cmd+V) op een kamerpagina -> moodboard */
+document.addEventListener("paste",async e=>{
+  const route=(location.hash||"").slice(1);if(!route.startsWith("kamer-")||!db||!assets||V)return;
+  const t=e.target;if(t&&(t.tagName==="INPUT"||t.tagName==="TEXTAREA"))return;
+  const files=[...(e.clipboardData?.items||[])].filter(i=>i.kind==="file"&&i.type.startsWith("image/")).map(i=>i.getAsFile()).filter(Boolean);
+  const text=e.clipboardData?.getData("text/plain")||"";
+  const roomId=route.slice(6);
+  if(files.length){e.preventDefault();await withBusy("Afbeelding op het moodboard zetten…",async()=>{for(const f of files){const a=await uploadImage(f);await add("mood",{roomId,type:"image",assetId:a.id,caption:""})}});lsSet("fold:rmood",true);toast("Op het moodboard gezet");return}
+  if(/^https?:\/\/\S*pin(terest|\.it)\S*$/i.test(text.trim())){e.preventDefault();await safe(()=>add("mood",{roomId,type:"link",href:text.trim(),caption:""}));toast("Pinterest-link op het moodboard gezet. Wil je de afbeelding zien, kopieer dan de afbeelding zelf en plak die.",5000)}
 });
 document.addEventListener("keydown",e=>{if(e.target.id==="chatin"&&e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendChat()}});
 window.addEventListener("hashchange",()=>{placing=null;render();window.scrollTo(0,0)});
