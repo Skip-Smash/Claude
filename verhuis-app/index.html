@@ -156,6 +156,28 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:60
 #viewer .pal button.on .sw{border-color:#fff;box-shadow:0 0 0 2px #7B9BF0}
 #viewer .muted{color:#94A39F}
 #viewer .spin{position:absolute;inset:0;display:grid;place-items:center;font-size:14px;color:#94A39F}
+#viewer .split{position:absolute;top:0;bottom:0;width:0;pointer-events:none}
+#viewer .split::before{content:"";position:absolute;top:0;bottom:0;left:-1px;width:2px;background:#fff;box-shadow:0 0 6px rgba(0,0,0,.5)}
+#viewer .split .knob{position:absolute;top:50%;left:-22px;width:44px;height:44px;margin-top:-22px;border-radius:50%;border:2px solid #fff;background:rgba(12,16,15,.8);color:#fff;font-size:18px;cursor:ew-resize;pointer-events:auto;touch-action:none}
+#viewer .split .tg{position:absolute;top:12px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:rgba(12,16,15,.75);padding:3px 8px;border-radius:4px;white-space:nowrap}
+#viewer .split .tg.l{right:10px}#viewer .split .tg.r{left:10px}
+#viewer .seg{display:inline-flex;border:1px solid #2F3A38;border-radius:8px;overflow:hidden}
+#viewer .seg button{background:#1E2625;border:0;color:#C9D3D0;padding:6px 12px;font-weight:600;font-size:13px;cursor:pointer}
+#viewer .seg button.on{background:#7B9BF0;color:#0D1424}
+#viewer .wallhead{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+#viewer .bigsw{width:56px;height:56px;border-radius:10px;border:2px solid #2F3A38;flex:none}
+#viewer .wn{font-family:var(--f-display);font-weight:700;font-size:18px;line-height:1.2}
+#viewer .tabs2{display:flex;gap:2px;border-bottom:1px solid #26302E}
+#viewer .tabs2 button{background:none;border:0;border-bottom:2px solid transparent;color:#94A39F;padding:6px 10px;font-weight:600;font-size:13px;cursor:pointer}
+#viewer .tabs2 button.on{color:#E8EEEC;border-bottom-color:#7B9BF0}
+#viewer .palgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(58px,1fr));gap:6px}
+#viewer .swb{background:none;border:0;padding:0;cursor:pointer;color:#C9D3D0;font-size:11px;text-align:center;min-width:0}
+#viewer .swb .sw{display:block;height:36px;border-radius:8px;border:2px solid #2F3A38;margin-bottom:3px;transition:transform .12s}
+#viewer .swb:hover .sw{transform:translateY(-2px)}
+#viewer .swb.on .sw{border-color:#fff;box-shadow:0 0 0 2px #7B9BF0}
+#viewer .swb .nm{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#viewer details.more summary{cursor:pointer;color:#94A39F;font-size:13px}
+#viewer .btn.primary[aria-pressed="true"]{background:#7B9BF0}
 .lb{position:fixed;inset:0;z-index:45;background:rgba(5,8,8,.9);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;color:#E8EEEC}
 .lb canvas{max-width:100%;max-height:72vh;cursor:crosshair;border-radius:6px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
@@ -659,15 +681,37 @@ function slerpArc(a,b){const da=uvToDir(a[0],a[1]),dbb=uvToDir(b[0],b[1]);const 
 function polyDirs(pts,closed){const out=[];const n=pts.length;for(let i=0;i<(closed?n:n-1);i++)out.push(...slerpArc(pts[i],pts[(i+1)%n]));if(!closed&&n)out.push(uvToDir(pts[n-1][0],pts[n-1][1]));return out}
 
 /* ---------- 360°: verfmotor ---------- */
+const S2L=new Float32Array(256);for(let i=0;i<256;i++){const c=i/255;S2L[i]=c<=.04045?c/12.92:Math.pow((c+.055)/1.055,2.4)}
+const L2S=new Uint8Array(4097);for(let i=0;i<=4096;i++){const c=i/4096;L2S[i]=Math.round(255*(c<=.0031308?c*12.92:1.055*Math.pow(c,1/2.4)-.055))}
+const lin2s=x=>L2S[x>=1?4096:x<=0?0:(x*4096)|0];
+const MASKS=new Map();/* assetId -> {w,h,data:Uint8Array} */
+async function loadMask(id){if(MASKS.has(id))return MASKS.get(id);const img=await loadImg(assetUrl(id));const c=document.createElement("canvas");c.width=img.naturalWidth;c.height=img.naturalHeight;const x=c.getContext("2d",{willReadFrequently:true});x.drawImage(img,0,0);const d=x.getImageData(0,0,c.width,c.height).data;const m=new Uint8Array(c.width*c.height);for(let i=0,j=0;j<m.length;i+=4,j++)m[j]=d[i];const r={w:c.width,h:c.height,data:m};MASKS.set(id,r);return r}
+async function loadMasksFor(p){for(const w of p.walls||[])if(w.mask&&!MASKS.has(w.mask)){try{await loadMask(w.mask)}catch(e){console.warn("masker",e)}}}
 class Pano{
   constructor(img,maxW){
     const W=Math.min(img.naturalWidth||img.width,maxW);const H=Math.round(W/2);this.W=W;this.H=H;
     this.canvas=document.createElement("canvas");this.canvas.width=W;this.canvas.height=H;
     this.ctx=this.canvas.getContext("2d",{willReadFrequently:true});this.ctx.drawImage(img,0,0,W,H);
     this.img=this.ctx.getImageData(0,0,W,H);this.base=new Uint8ClampedArray(this.img.data);this.orig=new Uint8ClampedArray(this.base);this.nadir=0;
-    this.label=new Uint8Array(W*H);this.lists=[];this.stats=[];this.mc=null;this.wallsKey="";
+    this.label=new Uint8Array(W*H);this.alpha=new Uint8Array(W*H);this.lists=[];this.stats=[];this.mc=null;this.wallsKey="";this.wk=null;this.oc=null;
   }
-  raster(pts,val){
+  setNadir(cut){
+    cut=+cut||0;if(cut===this.nadir)return false;this.nadir=cut;this.orig.set(this.base);this.wallsKey="";this.wk=null;
+    if(cut){const W=this.W,H=this.H,o=this.orig;const y0=Math.max(8,Math.min(H-2,Math.floor(cut*H)));
+    const c=new Float32Array(W*3);for(let x=0;x<W;x++)for(let ch=0;ch<3;ch++){let a=0;for(let y=y0-9;y<y0-3;y++)a+=o[(y*W+x)*4+ch];c[x*3+ch]=a/6}
+    const blur=(src,r)=>{const out=new Float32Array(W*3);for(let ch=0;ch<3;ch++){let acc=0;for(let k=-r;k<=r;k++)acc+=src[(((k%W)+W)%W)*3+ch];for(let x=0;x<W;x++){out[x*3+ch]=acc/(2*r+1);acc+=src[((x+r+1)%W)*3+ch]-src[(((x-r)%W+W)%W)*3+ch]}}return out};
+    const c1=blur(c,Math.max(2,Math.round(W/160))),c2=blur(c1,Math.round(W/14));const g=[0,0,0];for(let x=0;x<W;x++)for(let ch=0;ch<3;ch++)g[ch]+=c[x*3+ch]/W;
+    for(let y=y0-3;y<H;y++){const t=Math.max(0,(y-y0)/(H-y0));const a=Math.min(1,t*1.6),b=t*t;const feather=y<y0?(y-y0+4)/5:1;
+      for(let x=0;x<W;x++){const i=(y*W+x)*4;for(let ch=0;ch<3;ch++){const v=(c1[x*3+ch]*(1-a)+c2[x*3+ch]*a)*(1-b)+g[ch]*b;o[i+ch]=o[i+ch]*(1-feather)+v*feather}}}}
+    if(this.oc)this.refreshOrigCanvas();
+    return true;
+  }
+  origCanvas(){if(!this.oc){this.oc=document.createElement("canvas");this.oc.width=this.W;this.oc.height=this.H;this.refreshOrigCanvas()}return this.oc}
+  refreshOrigCanvas(){const id=new ImageData(new Uint8ClampedArray(this.orig),this.W,this.H);this.oc.getContext("2d").putImageData(id,0,0)}
+  dropOrigCanvas(){this.oc=null}
+  /* -- polygoon of masker in label/alpha zetten -- */
+  put(i,a,val){const L=this.label,A=this.alpha;if(L[i]===255)return;if(val===255){if(a>127){L[i]=255;A[i]=0}return}if(L[i]===0||a>A[i]){L[i]=val;A[i]=a}}
+  rasterPoly(pts,val,mk){
     const W=this.W,H=this.H;if(!this.mc){this.mc=document.createElement("canvas");this.mc.width=W;this.mc.height=H;this.mctx=this.mc.getContext("2d",{willReadFrequently:true})}
     const ctx=this.mctx;ctx.clearRect(0,0,W,H);
     const dirs=polyDirs(pts,true);dirs.push(dirs[0]);let off=0,prev=null;const P=[];
@@ -677,48 +721,145 @@ class Pano{
     ctx.fillStyle="#fff";for(let k=-2;k<=2;k++){ctx.beginPath();P.forEach((p,i)=>i?ctx.lineTo(p[0]+k*W,p[1]):ctx.moveTo(p[0]+k*W,p[1]));ctx.closePath();ctx.fill()}
     let minY=H,maxY=0;P.forEach(p=>{minY=Math.min(minY,p[1]);maxY=Math.max(maxY,p[1])});
     const y0=Math.max(0,Math.floor(minY)-1),y1=Math.min(H,Math.ceil(maxY)+1);if(y1<=y0)return;
-    const d=ctx.getImageData(0,y0,W,y1-y0).data;const L=this.label;
-    for(let y=y0,i=3;y<y1;y++){const row=y*W;for(let x=0;x<W;x++,i+=4)if(d[i]>127)L[row+x]=val}
+    const d=ctx.getImageData(0,y0,W,y1-y0).data;
+    if(!mk){for(let y=y0,i=3;y<y1;y++){const row=y*W;for(let x=0;x<W;x++,i+=4)if(d[i]>0)this.put(row+x,d[i],val)}return}
+    const mw=mk.w,mh=mk.h,md=mk.data,sx=mw/W,sy=mh/H;
+    for(let y=y0,i=3;y<y1;y++){const row=y*W;const fy=Math.max(0,(y+.5)*sy-.5),ya=Math.min(mh-1,fy|0),yb=Math.min(mh-1,ya+1),ty=fy-ya;
+      for(let x=0;x<W;x++,i+=4){if(!d[i])continue;const fx=(x+.5)*sx-.5;let xa=Math.floor(fx);const tx=fx-xa;xa=(xa+mw)%mw;const xb=(xa+1)%mw;
+        const m=(md[ya*mw+xa]*(1-tx)+md[ya*mw+xb]*tx)*(1-ty)+(md[yb*mw+xa]*(1-tx)+md[yb*mw+xb]*tx)*ty;const a=d[i]*m/255;if(a>6)this.put(row+x,a|0,val)}}
   }
-  setNadir(cut){
-    cut=+cut||0;if(cut===this.nadir)return false;this.nadir=cut;this.orig.set(this.base);this.wallsKey="";
-    if(!cut)return true;const W=this.W,H=this.H,o=this.orig;const y0=Math.max(8,Math.min(H-2,Math.floor(cut*H)));
-    const c=new Float32Array(W*3);for(let x=0;x<W;x++)for(let ch=0;ch<3;ch++){let a=0;for(let y=y0-9;y<y0-3;y++)a+=o[(y*W+x)*4+ch];c[x*3+ch]=a/6}
-    const blur=(src,r)=>{const out=new Float32Array(W*3);for(let ch=0;ch<3;ch++){let acc=0;for(let k=-r;k<=r;k++)acc+=src[(((k%W)+W)%W)*3+ch];for(let x=0;x<W;x++){out[x*3+ch]=acc/(2*r+1);acc+=src[((x+r+1)%W)*3+ch]-src[(((x-r)%W+W)%W)*3+ch]}}return out};
-    const c1=blur(c,Math.max(2,Math.round(W/160))),c2=blur(c1,Math.round(W/14));const g=[0,0,0];for(let x=0;x<W;x++)for(let ch=0;ch<3;ch++)g[ch]+=c[x*3+ch]/W;
-    for(let y=y0-3;y<H;y++){const t=Math.max(0,(y-y0)/(H-y0));const a=Math.min(1,t*1.6),b=t*t;const feather=y<y0?(y-y0+4)/5:1;
-      for(let x=0;x<W;x++){const i=(y*W+x)*4;for(let ch=0;ch<3;ch++){const v=(c1[x*3+ch]*(1-a)+c2[x*3+ch]*a)*(1-b)+g[ch]*b;o[i+ch]=o[i+ch]*(1-feather)+v*feather}}}
-    return true;
+  rasterMask(m,val){
+    const W=this.W,H=this.H,mw=m.w,mh=m.h,md=m.data;let y0=mh,y1=0,x0=mw,x1=0;
+    for(let y=0;y<mh;y++)for(let x=0;x<mw;x++)if(md[y*mw+x]){if(y<y0)y0=y;if(y>y1)y1=y;if(x<x0)x0=x;if(x>x1)x1=x}
+    if(y1<y0)return;const sx=mw/W,sy=mh/H;
+    const Y0=Math.max(0,Math.floor((y0-1)/sy)),Y1=Math.min(H,Math.ceil((y1+2)/sy)),X0=Math.max(0,Math.floor((x0-1)/sx)),X1=Math.min(W,Math.ceil((x1+2)/sx));
+    for(let Y=Y0;Y<Y1;Y++){const fy=Math.max(0,(Y+.5)*sy-.5),ya=Math.min(mh-1,fy|0),yb=Math.min(mh-1,ya+1),ty=fy-ya;
+      for(let X=X0;X<X1;X++){const fx=(X+.5)*sx-.5;let xa=Math.floor(fx);const tx=fx-xa;xa=(xa+mw)%mw;const xb=(xa+1)%mw;
+        const a=(md[ya*mw+xa]*(1-tx)+md[ya*mw+xb]*tx)*(1-ty)+(md[yb*mw+xa]*(1-tx)+md[yb*mw+xb]*tx)*ty;if(a>6)this.put(Y*W+X,a|0,val)}}
   }
   setWalls(walls){
-    const key=JSON.stringify(walls.map(w=>[w.pts,!!w.exclude]));if(key===this.wallsKey)return;this.wallsKey=key;
-    this.label.fill(0);walls.forEach((w,i)=>{if(!w.exclude&&w.pts.length>2)this.raster(w.pts,i+1)});walls.forEach(w=>{if(w.exclude&&w.pts.length>2)this.raster(w.pts,255)});
-    const n=walls.length,L=this.label,cnt=new Int32Array(256);for(let i=0;i<L.length;i++)cnt[L[i]]++;
-    this.lists=[];for(let k=1;k<=n&&k<255;k++)this.lists[k]=new Int32Array(cnt[k]);const pos=new Int32Array(256);
-    for(let i=0;i<L.length;i++){const k=L[i];if(k>0&&k<255&&k<=n)this.lists[k][pos[k]++]=i}
+    const key=JSON.stringify([walls.map(w=>[w.pts||null,w.mask||null,!!w.exclude,w.mask?MASKS.has(w.mask):0]),this.nadir]);if(key===this.wallsKey)return;this.wallsKey=key;
+    this.label.fill(0);this.alpha.fill(0);
+    walls.forEach(w=>{if(w.exclude){if(w.mask&&MASKS.has(w.mask))this.rasterMask(MASKS.get(w.mask),255);else if(w.pts&&w.pts.length>2)this.rasterPoly(w.pts,255)}});
+    walls.forEach((w,i)=>{if(w.exclude||i>=254)return;const mk=w.mask?MASKS.get(w.mask):null;if(w.pts&&w.pts.length>2){if(!w.mask||mk)this.rasterPoly(w.pts,i+1,mk)}else if(mk)this.rasterMask(mk,i+1)});
+    const n=Math.min(254,walls.length),L=this.label,cnt=new Int32Array(256);for(let i=0;i<L.length;i++)cnt[L[i]]++;
+    this.lists=[];for(let k=1;k<=n;k++)this.lists[k]=new Int32Array(cnt[k]);const pos=new Int32Array(256);
+    for(let i=0;i<L.length;i++){const k=L[i];if(k>0&&k<=n)this.lists[k][pos[k]++]=i}
     const o=this.orig;this.stats=[];
-    for(let k=1;k<=n&&k<255;k++){const li=this.lists[k];if(!li.length){this.stats[k]=null;continue}
-      const step=Math.max(1,Math.floor(li.length/30000));const hist=new Int32Array(256);let m=0;
-      for(let j=0;j<li.length;j+=step){const p=li[j]*4;hist[(o[p]*77+o[p+1]*150+o[p+2]*29)>>8]++;m++}
-      let acc=0,med=128;for(let b=0;b<256;b++){acc+=hist[b];if(acc>=m/2){med=b;break}}
-      let r=0,g=0,bb=0,c=0;const tol=med*.15+5;
-      for(let j=0;j<li.length;j+=step){const p=li[j]*4;const l=(o[p]*77+o[p+1]*150+o[p+2]*29)>>8;if(Math.abs(l-med)<=tol){r+=o[p];g+=o[p+1];bb+=o[p+2];c++}}
-      this.stats[k]={Lm:Math.max(med,8),r:r/c||med,g:g/c||med,b:bb/c||med}}
+    for(let k=1;k<=n;k++){const li=this.lists[k];if(!li.length){this.stats[k]=null;continue}
+      const step=Math.max(1,Math.floor(li.length/40000));const ys=[];
+      for(let j=0;j<li.length;j+=step){if(this.alpha[li[j]]<200)continue;const p=li[j]*4;ys.push(.2126*S2L[o[p]]+.7152*S2L[o[p+1]]+.0722*S2L[o[p+2]])}
+      if(!ys.length){this.stats[k]=null;continue}ys.sort((a,b)=>a-b);const Ym=Math.max(ys[ys.length>>1],.004);
+      let r=0,g=0,b=0,c=0;for(let j=0;j<li.length;j+=step){const p=li[j]*4;const y=.2126*S2L[o[p]]+.7152*S2L[o[p+1]]+.0722*S2L[o[p+2]];if(Math.abs(y-Ym)<Ym*.2){r+=o[p];g+=o[p+1];b+=o[p+2];c++}}
+      this.stats[k]={Ym,r:c?r/c:128,g:c?g/c:128,b:c?b/c:128,Lm:Math.max(8,lin2s(Ym))}}
   }
-  compose(colors,smart,strength=.95){
-    const o=this.orig,out=this.img.data;out.set(o);
-    colors.forEach((rgb,idx)=>{const k=idx+1;if(!rgb||!this.lists[k]||!this.stats[k])return;const li=this.lists[k],st=this.stats[k];const [pr,pg,pb]=rgb;const Lm=st.Lm,den=Lm+40;
-      for(let j=0;j<li.length;j++){const p=li[j]*4;const r=o[p],g=o[p+1],b=o[p+2];const l=(r*77+g*150+b*29)>>8;let s=l/Lm;if(s<.2)s=.2;else if(s>1.5)s=1.5;
-        let w=strength;if(smart){const dr=r-st.r,dg=g-st.g,db_=b-st.b;const dd=Math.sqrt(dr*dr+dg*dg+db_*db_)/den;if(dd>.9)continue;if(dd>.5)w*=(.9-dd)/.4}
-        out[p]=r+(pr*s-r)*w;out[p+1]=g+(pg*s-g)*w;out[p+2]=b+(pb*s-b)*w}});
+  /* realistisch herkleuren: lichtverhouding uit de foto x nieuwe kleur, in lineair licht */
+  compose(colors,smart,extra){
+    const o=this.orig,out=this.img.data,A=this.alpha;out.set(o);
+    colors.forEach((rgb,idx)=>{const k=idx+1;if(!rgb||!this.lists[k]||!this.stats[k])return;const li=this.lists[k],st=this.stats[k];
+      const tr=S2L[rgb[0]],tg=S2L[rgb[1]],tb=S2L[rgb[2]],Ym=st.Ym,den=st.Lm+40;
+      for(let j=0;j<li.length;j++){const i=li[j],p=i*4;const r=o[p],g=o[p+1],b=o[p+2];
+        let w=A[i]/255*.97;if(smart){const dr=r-st.r,dg=g-st.g,db_=b-st.b;const dd=Math.sqrt(dr*dr+dg*dg+db_*db_)/den;if(dd>1.05)continue;if(dd>.6)w*=(1.05-dd)/.45}
+        let s=Math.pow((.2126*S2L[r]+.7152*S2L[g]+.0722*S2L[b])/Ym,.85);if(s>1.45)s=1.45+(s-1.45)*.2;
+        const nr=lin2s(tr*s),ng=lin2s(tg*s),nb=lin2s(tb*s);out[p]=r+(nr-r)*w;out[p+1]=g+(ng-g)*w;out[p+2]=b+(nb-b)*w}});
+    if(extra)extra(out);
     this.ctx.putImageData(this.img,0,0);
   }
   original(){this.img.data.set(this.orig);this.ctx.putImageData(this.img,0,0)}
   hit(u,v){const x=Math.min(this.W-1,Math.floor(((u%1)+1)%1*this.W)),y=Math.min(this.H-1,Math.max(0,Math.floor(v*this.H)));return this.label[y*this.W+x]}
+  /* -- werkbeeld voor 'tik op de muur' -- */
+  work(){
+    if(this.wk)return this.wk;const MW=Math.min(2048,this.W),MH=MW/2;
+    const src=document.createElement("canvas");src.width=this.W;src.height=this.H;src.getContext("2d").putImageData(new ImageData(new Uint8ClampedArray(this.orig),this.W,this.H),0,0);
+    const c=document.createElement("canvas");c.width=MW;c.height=MH;const x=c.getContext("2d",{willReadFrequently:true});x.imageSmoothingQuality="high";x.drawImage(src,0,0,MW,MH);
+    const d=x.getImageData(0,0,MW,MH).data;const N=MW*MH;const L=new Float32Array(N),a=new Float32Array(N),b=new Float32Array(N);
+    const f=t=>t>.008856?Math.cbrt(t):7.787*t+16/116;
+    for(let i=0,p=0;i<N;i++,p+=4){const R=S2L[d[p]],G=S2L[d[p+1]],B=S2L[d[p+2]];const X=(R*.4124+G*.3576+B*.1805)/.95047,Y=R*.2126+G*.7152+B*.0722,Z=(R*.0193+G*.1192+B*.9505)/1.08883;
+      const fx=f(X),fy=f(Y),fz=f(Z);L[i]=116*fy-16;a[i]=500*(fx-fy);b[i]=200*(fy-fz)}
+    const E=new Float32Array(N);/* randsterkte (Sobel op L, plus kleur) */
+    for(let y=1;y<MH-1;y++)for(let x0=0;x0<MW;x0++){const xl=(x0-1+MW)%MW,xr=(x0+1)%MW,u=(y-1)*MW,m=y*MW,dn=(y+1)*MW;
+      const gx=(L[u+xr]+2*L[m+xr]+L[dn+xr])-(L[u+xl]+2*L[m+xl]+L[dn+xl]),gy=(L[dn+xl]+2*L[dn+x0]+L[dn+xr])-(L[u+xl]+2*L[u+x0]+L[u+xr]);
+      const ca=Math.abs(a[m+xr]-a[m+xl])+Math.abs(a[dn+x0]-a[u+x0])+Math.abs(b[m+xr]-b[m+xl])+Math.abs(b[dn+x0]-b[u+x0]);
+      E[m+x0]=Math.hypot(gx,gy)/4+ca*.75}
+    this.wk={MW,MH,L,a,b,E};return this.wk;
+  }
+  grow(u,v,tol){
+    const {MW,MH,L,a,b,E}=this.work();const N=MW*MH;const m=new Uint8Array(N);
+    const sx=Math.min(MW-1,Math.floor(u*MW)),sy=Math.min(MH-2,Math.max(1,Math.floor(v*MH)));
+    /* zaad: gemiddelde over 5x5 */
+    let sL=0,sa=0,sb=0,n=0;for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){const i=Math.min(MH-1,Math.max(0,sy+dy))*MW+((sx+dx+MW)%MW);sL+=L[i];sa+=a[i];sb+=b[i];n++}sL/=n;sa/=n;sb/=n;
+    const t=Math.max(1,Math.min(10,tol));const stepT=.9+t*.32,edgeT=2.2+t*1.15,chromT=4+t*1.6,Llo=sL*(.55-t*.025),Lhi=sL*(1.25+t*.04)+6;
+    const q=new Int32Array(N);let qh=0,qt=0;const s0=sy*MW+sx;m[s0]=255;q[qt++]=s0;
+    while(qh<qt){const i=q[qh++];const y=(i/MW)|0,x=i-y*MW;
+      const nb=[y*MW+(x+1)%MW,y*MW+(x-1+MW)%MW,y>1?i-MW:-1,y<MH-2?i+MW:-1];
+      for(const j of nb){if(j<0||m[j])continue;if(E[j]>edgeT)continue;
+        const dl=Math.abs(L[j]-L[i])*.6+Math.abs(a[j]-a[i])+Math.abs(b[j]-b[i]);if(dl>stepT)continue;
+        if(Math.hypot(a[j]-sa,b[j]-sb)>chromT)continue;if(L[j]<Llo||L[j]>Lhi)continue;
+        m[j]=255;q[qt++]=j}}
+    return m;
+  }
 }
+/* gaten dichten, rand verzachten */
+function refineMask(m,MW,MH){
+  const N=MW*MH;let area=0;for(let i=0;i<N;i++)if(m[i])area++;if(!area)return m;
+  const maxHole=Math.max(60,area*.012);const seen=new Uint8Array(N);const q=new Int32Array(N);
+  for(let s=0;s<N;s++){if(m[s]||seen[s])continue;let qh=0,qt=0;q[qt++]=s;seen[s]=1;let border=false;const comp=[];
+    while(qh<qt){const i=q[qh++];comp.push(i);if(comp.length>maxHole+1){border=true}const y=(i/MW)|0,x=i-y*MW;if(y===0||y===MH-1)border=true;
+      const nb=[y*MW+(x+1)%MW,y*MW+(x-1+MW)%MW,y>0?i-MW:-1,y<MH-1?i+MW:-1];for(const j of nb){if(j>=0&&!m[j]&&!seen[j]){seen[j]=1;q[qt++]=j}}}
+    if(!border&&comp.length<=maxHole)for(const i of comp)m[i]=255}
+  /* 1px uitzetten + zachte rand */
+  const d=new Uint8Array(m);for(let y=1;y<MH-1;y++)for(let x=0;x<MW;x++){const i=y*MW+x;if(m[i])continue;if(m[i-MW]||m[i+MW]||m[y*MW+(x+1)%MW]||m[y*MW+(x-1+MW)%MW])d[i]=150}
+  const o=new Uint8Array(N);for(let y=1;y<MH-1;y++)for(let x=0;x<MW;x++){const i=y*MW+x;o[i]=(d[i]*4+d[i-MW]+d[i+MW]+d[y*MW+(x+1)%MW]+d[y*MW+(x-1+MW)%MW])/8}
+  return o;
+}
+/* hoeken + automatisch voorwerpen eruit */
+function polyMaskSmall(pts,MW,MH){
+  const c=document.createElement("canvas");c.width=MW;c.height=MH;const ctx=c.getContext("2d",{willReadFrequently:true});
+  const dirs=polyDirs(pts,true);dirs.push(dirs[0]);let off=0,prev=null;const P=[];
+  for(const d of dirs){const [u,v]=dirToUv(d);let x=u*MW;if(prev!=null){const dd=x+off-prev;if(dd>MW/2)off-=MW;else if(dd<-MW/2)off+=MW}x+=off;P.push([x,v*MH]);prev=x}
+  if(Math.abs(P[P.length-1][0]-P[0][0])>MW/2){const avgY=P.reduce((a,p)=>a+p[1],0)/P.length;const py=avgY<MH/2?0:MH;P.push([P[P.length-1][0],py],[P[0][0],py])}
+  ctx.fillStyle="#fff";for(let k=-2;k<=2;k++){ctx.beginPath();P.forEach((p,i)=>i?ctx.lineTo(p[0]+k*MW,p[1]):ctx.moveTo(p[0]+k*MW,p[1]));ctx.closePath();ctx.fill()}
+  const d=ctx.getImageData(0,0,MW,MH).data;const m=new Uint8Array(MW*MH);for(let i=0;i<m.length;i++)m[i]=d[i*4+3]>127?255:0;return m;
+}
+function wallMaskInPoly(P,pts,tol,seeds){
+  const {MW,MH,L,a,b,E}=P.work();const N=MW*MH;const poly=polyMaskSmall(pts,MW,MH);
+  const t=Math.max(1,Math.min(10,tol));const edgeT=3+t*1.4,chromT=2+t*.9,lo=.62-t*.025,hi=1.3+t*.05;
+  /* dominante wandkleur: mediaan van rustige pixels */
+  const sL=[],sa=[],sb=[];let area=0;const step=7;for(let i=0;i<N;i++){if(!poly[i])continue;area++;if(i%step||E[i]>edgeT*.5)continue;sL.push(L[i]);sa.push(a[i]);sb.push(b[i])}
+  if(!area)return null;const med=v=>{v.sort((x,y)=>x-y);return v.length?v[v.length>>1]:0};const L0=med(sL),a0=med(sa),b0=med(sb);
+  const cand=new Uint8Array(N);for(let i=0;i<N;i++){if(!poly[i])continue;if(E[i]>edgeT)continue;if(Math.hypot(a[i]-a0,b[i]-b0)>chromT)continue;if(L[i]<L0*lo||L[i]>L0*hi+4)continue;cand[i]=1}
+  /* grote samenhangende stukken houden */
+  const m=new Uint8Array(N);const seen=new Uint8Array(N);const q=new Int32Array(N);const minC=Math.max(80,area*.02);
+  for(let s=0;s<N;s++){if(!cand[s]||seen[s])continue;let qh=0,qt=0;q[qt++]=s;seen[s]=1;
+    while(qh<qt){const i=q[qh++];const y=(i/MW)|0,x=i-y*MW;const nb=[y*MW+(x+1)%MW,y*MW+(x-1+MW)%MW,y>0?i-MW:-1,y<MH-1?i+MW:-1];for(const j of nb){if(j>=0&&cand[j]&&!seen[j]){seen[j]=1;q[qt++]=j}}}
+    if(qt>=minC)for(let k=0;k<qt;k++)m[q[k]]=255}
+  /* geleidelijke overgangen (schaduw, licht) mee laten groeien vanuit de kern */
+  {const stepT=.45+t*.14;let qh=0,qt=0;for(let i=0;i<N;i++)if(m[i])q[qt++]=i;
+   while(qh<qt){const i=q[qh++];const y=(i/MW)|0,x=i-y*MW;const nb=[y*MW+(x+1)%MW,y*MW+(x-1+MW)%MW,y>0?i-MW:-1,y<MH-1?i+MW:-1];
+    for(const j of nb){if(j<0||m[j]||!poly[j])continue;if(E[j]>edgeT)continue;const dl=Math.abs(L[j]-L[i])*.6+Math.abs(a[j]-a[i])+Math.abs(b[j]-b[i]);if(dl>stepT)continue;
+      if(Math.hypot(a[j]-a0,b[j]-b0)>chromT*1.7)continue;if(L[j]<L0*(lo-.15))continue;m[j]=255;q[qt++]=j}}}
+  for(const s of seeds||[]){const g=P.grow(s.u,s.v,s.neg?Math.max(1,tol-1):tol);for(let i=0;i<N;i++)if(g[i]&&poly[i])m[i]=s.neg?0:255}
+  const r=refineMask(m,MW,MH);for(let i=0;i<N;i++)if(!poly[i])r[i]=r[i]>0&&isEdgeOfPoly(poly,i,MW,MH)?r[i]:0;
+  return {m:r,MW,MH};
+}
+function isEdgeOfPoly(poly,i,MW,MH){const y=(i/MW)|0,x=i-y*MW;return(poly[y*MW+(x+1)%MW]||poly[y*MW+(x-1+MW)%MW]||(y>0&&poly[i-MW])||(y<MH-1&&poly[i+MW]))}
+
+function stampMask(m,MW,MH,u,v,r,val,poly){const ry=Math.max(1,r/Math.PI*MH),th=v*Math.PI,rx=Math.min(MW/2,ry/Math.max(.12,Math.sin(th)));const cx=u*MW,cy=v*MH;
+  for(let y=Math.max(0,Math.floor(cy-ry));y<=Math.min(MH-1,Math.ceil(cy+ry));y++){const dy=(y-cy)/ry;const span=rx*Math.sqrt(Math.max(0,1-dy*dy));
+    for(let x=Math.floor(cx-span);x<=Math.ceil(cx+span);x++){const i=y*MW+((x%MW)+MW)%MW;if(poly&&!poly[i])continue;m[i]=val}}}
+async function maskToBlob(m,MW,MH){const c=document.createElement("canvas");c.width=MW;c.height=MH;const x=c.getContext("2d");const id=x.createImageData(MW,MH);for(let i=0,p=0;i<m.length;i++,p+=4){id.data[p]=id.data[p+1]=id.data[p+2]=m[i];id.data[p+3]=255}x.putImageData(id,0,0);return await new Promise(r=>c.toBlob(r,"image/png"))}
 function activeVar(p){const vs=p.variants&&p.variants.length?p.variants:[{id:"v1",name:"Variant A",colors:{}}];return vs.find(v=>v.id===p.activeVariant)||vs[0]}
 function colorsFor(p,v){return(p.walls||[]).map(w=>{if(w.exclude)return null;const pa=byId("paints",(v.colors||{})[w.id]);return pa?hexToRgb(pa.hex):null})}
 async function loadImg(src){const img=new Image();img.decoding="async";img.src=src;await img.decode();return img}
+
+const INSPIRATIE=[
+ ["Neutraal",[["Kalkwit","#EEEBE3"],["Gebroken wit","#E9E4D8"],["Linnen","#DDD5C6"],["Zandsteen","#C9BBA3"],["Greige","#B9AE9E"],["Warm grijs","#A39B90"],["Steengrijs","#8A8781"],["Antraciet","#3E4143"]]],
+ ["Groen",[["Mint","#CFE0D3"],["Saliegroen","#B7BFA6"],["Pistache","#C8CF9F"],["Eucalyptus","#9FB0A0"],["Olijf","#8A8B62"],["Mosgroen","#6E7457"],["Dennengroen","#3F5248"],["Flessengroen","#2F4A3E"]]],
+ ["Blauw",[["IJsblauw","#DCE6EA"],["Mistblauw","#C7D3D8"],["Duifblauw","#9FAFB8"],["Grijsblauw","#8995A0"],["Staalblauw","#6F8796"],["Denim","#4E6478"],["Petrol","#2F5D62"],["Inktblauw","#2C3A4B"]]],
+ ["Warm",[["Zalm","#E3B39B"],["Oudroze","#CFA6A0"],["Oker","#C99A4B"],["Mosterd","#B98E2E"],["Karamel","#A8774A"],["Klei","#A97C66"],["Terracotta","#B86A4B"],["Roestbruin","#8C4A32"]]],
+ ["Aards",[["Havergrijs","#CFC6B6"],["Paddenstoel","#A49686"],["Kameel","#B39374"],["Taupe","#8E7F72"],["Toffee","#93694A"],["Mokka","#6B5446"],["Cacao","#4F3E35"],["Chocolade","#3D2B24"]]],
+ ["Diep",[["Leisteen","#4B5257"],["Bosgroen","#2E3D33"],["Nachtblauw","#1F2A3A"],["Aubergine","#4A3540"],["Pruim","#5B3F52"],["Bordeaux","#5E2C2E"],["Koolzwart","#262626"],["Diep olijf","#4A4A35"]]]
+];
 
 /* ---------- 360°: viewer ---------- */
 let V=null;
@@ -726,12 +867,13 @@ async function openViewer(photoId,opts={}){
   if(typeof THREE==="undefined"){toast("De 360°-viewer kon niet laden (geen verbinding met de bibliotheek).");return}
   closeViewer();
   const el=document.createElement("div");el.id="viewer";
-  el.innerHTML=`<div class="vt"><button class="btn sm" id="vclose" aria-label="Sluiten">← Terug</button><h3 id="vtitle"></h3><select id="vvar" aria-label="Variant"></select><button class="btn sm" id="vvarnew" title="Nieuwe variant op basis van deze">+ Variant</button></div>
+  el.innerHTML=`<div class="vt"><button class="btn sm" id="vclose" aria-label="Sluiten">← Terug</button><h3 id="vtitle"></h3><button class="btn sm" id="vcmp" aria-pressed="false">Voor / na</button><select id="vvar" aria-label="Variant"></select><button class="btn sm" id="vvarnew" title="Nieuwe variant op basis van deze">+ Variant</button></div>
   <div class="stage" id="vstage"><div class="spin" id="vspin">360°-foto laden…</div></div><div class="vs" id="vsheet"></div>`;
   document.body.appendChild(el);document.body.style.overflow="hidden";
-  V={id:photoId,el,mode:"look",draft:[],draftExclude:false,sel:null,smart:lsGet("smart",true),lon:0,lat:0,fov:80,dirty:true,lastColorsKey:"",linkDraft:null};
+  V={id:photoId,el,mode:"look",draft:[],draftExclude:false,sel:null,smart:lsGet("smart",true),lon:0,lat:0,fov:80,dirty:true,lastColorsKey:"",linkDraft:null,tab:lsGet("palTab","eigen"),preview:null,compare:false,split:.5,seeds:[],tol:lsGet("tol",5),erase:false};
   {const p0=byId("photos",photoId);V.lon=opts.lon??(p0&&p0.startLon)??0;V.lat=opts.lat??(p0&&p0.startLat)??0}
   $("#vclose",el).onclick=closeViewer;
+  $("#vcmp",el).onclick=()=>setCompare(!V.compare);
   const p=byId("photos",photoId);$("#vtitle",el).textContent=`${roomName(p.roomId)} · ${p.name||""}`;
   const stage=$("#vstage",el);
   const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));stage.appendChild(renderer.domElement);
@@ -743,39 +885,88 @@ async function openViewer(photoId,opts={}){
   const pano=new Pano(img,Math.min(small?4096:8192,maxTex));
   const tex=new THREE.CanvasTexture(pano.canvas);tex.minFilter=THREE.LinearFilter;tex.generateMipmaps=false;
   const geo=new THREE.SphereGeometry(500,96,64);geo.scale(-1,1,1);
-  scene.add(new THREE.Mesh(geo,new THREE.MeshBasicMaterial({map:tex})));
+  const mesh=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({map:tex}));scene.add(mesh);
   const overlay=new THREE.Group();scene.add(overlay);const linkG=new THREE.Group();scene.add(linkG);
-  Object.assign(V,{renderer,scene,cam,pano,tex,overlay,linkG,stage});
+  Object.assign(V,{renderer,scene,cam,pano,tex,mesh,geo,overlay,linkG,stage});
   $("#vspin",el).remove();
   const resize=()=>{const w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix();V.dirty=true};
-  V.resize=resize;window.addEventListener("resize",resize);resize();
-  bindStage();refreshViewer(true);
-  const loop=()=>{if(!V||V.renderer!==renderer)return;if(V.dirty){V.dirty=false;const phi=V.lon*Math.PI/180,th=(90-V.lat)*Math.PI/180;cam.fov=V.fov;cam.updateProjectionMatrix();cam.lookAt(Math.cos(phi)*Math.sin(th),Math.cos(th),Math.sin(phi)*Math.sin(th));renderer.render(scene,cam)}V.raf=requestAnimationFrame(loop)};loop();
+  V.resize=resize;window.addEventListener("resize",resize);resize();try{V.ro=new ResizeObserver(()=>resize());V.ro.observe(stage)}catch(e){}
+  bindStage();await loadMasksFor(p);if(!V||V.renderer!==renderer)return;refreshViewer(true);
+  const loop=()=>{if(!V||V.renderer!==renderer)return;if(V.dirty){V.dirty=false;const phi=V.lon*Math.PI/180,th=(90-V.lat)*Math.PI/180;cam.fov=V.fov;cam.updateProjectionMatrix();cam.lookAt(Math.cos(phi)*Math.sin(th),Math.cos(th),Math.sin(phi)*Math.sin(th));
+    if(V.compare&&V.mesh2){const w=stage.clientWidth,h=stage.clientHeight,sx=Math.round(w*V.split);renderer.setScissorTest(true);
+      V.mesh.visible=false;V.mesh2.visible=true;renderer.setScissor(0,0,sx,h);renderer.setViewport(0,0,w,h);renderer.render(scene,cam);
+      V.mesh.visible=true;V.mesh2.visible=false;renderer.setScissor(sx,0,w-sx,h);renderer.render(scene,cam);renderer.setScissorTest(false)}
+    else renderer.render(scene,cam)}V.raf=requestAnimationFrame(loop)};loop();
 }
-function closeViewer(){if(!V)return;cancelAnimationFrame(V.raf);window.removeEventListener("resize",V.resize||(()=>{}));try{V.renderer&&V.renderer.dispose();V.tex&&V.tex.dispose()}catch(e){}V.el.remove();V=null;document.body.style.overflow=""}
+function setCompare(on){
+  if(!V||!V.pano)return;V.compare=on;$("#vcmp",V.el).setAttribute("aria-pressed",on);$("#vcmp",V.el).classList.toggle("primary",on);
+  const old=$("#vsplit",V.el);if(old)old.remove();
+  if(on){const t=new THREE.CanvasTexture(V.pano.origCanvas());t.minFilter=THREE.LinearFilter;t.generateMipmaps=false;V.tex2=t;V.mesh2=new THREE.Mesh(V.geo,new THREE.MeshBasicMaterial({map:t}));V.mesh2.visible=false;V.scene.add(V.mesh2);
+    const s=document.createElement("div");s.id="vsplit";s.className="split";s.innerHTML=`<span class="tg l">Nu</span><span class="tg r">Nieuw</span><button class="knob" aria-label="Schuif voor/na">⟷</button>`;V.stage.appendChild(s);
+    const place=()=>{s.style.left=(V.split*100)+"%"};place();const k=$(".knob",s);
+    k.addEventListener("pointerdown",e=>{e.stopPropagation();k.setPointerCapture(e.pointerId);const r=V.stage.getBoundingClientRect();
+      const mv=ev=>{V.split=Math.max(.02,Math.min(.98,(ev.clientX-r.left)/r.width));place();V.dirty=true};const upf=()=>{k.removeEventListener("pointermove",mv);k.removeEventListener("pointerup",upf)};
+      k.addEventListener("pointermove",mv);k.addEventListener("pointerup",upf)});
+  }else if(V.mesh2){V.scene.remove(V.mesh2);V.mesh2.material.dispose();V.tex2.dispose();V.mesh2=null;V.tex2=null;V.pano.dropOrigCanvas()}
+  V.dirty=true;
+}
+function closeViewer(){if(!V)return;cancelAnimationFrame(V.raf);try{V.ro&&V.ro.disconnect()}catch(e){}window.removeEventListener("resize",V.resize||(()=>{}));try{V.renderer&&V.renderer.dispose();V.tex&&V.tex.dispose();V.tex2&&V.tex2.dispose()}catch(e){}V.el.remove();V=null;document.body.style.overflow=""}
 function bindStage(){
   const st=V.stage;const ptrs=new Map();let start=null,pinch=null;
-  st.addEventListener("pointerdown",e=>{st.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  st.addEventListener("pointerdown",e=>{if(e.target.closest(".knob"))return;st.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(ptrs.size===1)start={x:e.clientX,y:e.clientY,lon:V.lon,lat:V.lat,t:Date.now(),moved:false};
     if(ptrs.size===2){const [a,b]=[...ptrs.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y),fov:V.fov};start&&(start.moved=true)}});
   st.addEventListener("pointermove",e=>{if(!ptrs.has(e.pointerId))return;ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(ptrs.size===2&&pinch){const [a,b]=[...ptrs.values()];const d=Math.hypot(a.x-b.x,a.y-b.y);V.fov=Math.max(25,Math.min(100,pinch.fov*pinch.d/d));V.dirty=true;return}
+    if(start&&ptrs.size===1&&V.mode==="refine"&&V.ref&&V.ref.tool.startsWith("brush")){const dx=e.clientX-start.x,dy=e.clientY-start.y;if(!start.moved&&Math.hypot(dx,dy)>4){start.moved=true;V.ref.gid=(V.ref.gid||0)+1}
+      if(start.moved){const now=performance.now();if(!start.lb||now-start.lb>30){start.lb=now;brushAt(e)}}return}
     if(start&&ptrs.size===1){const dx=e.clientX-start.x,dy=e.clientY-start.y;if(Math.hypot(dx,dy)>6)start.moved=true;if(start.moved){const k=.1*V.fov/80;V.lon=start.lon-dx*k;V.lat=Math.max(-85,Math.min(85,start.lat+dy*k));V.dirty=true}}});
   const up=e=>{if(!ptrs.has(e.pointerId))return;ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;
-    if(ptrs.size===0&&start){if(!start.moved&&Date.now()-start.t<600)onTap(e);start=null}};
+    if(ptrs.size===0&&start){if(!start.moved&&Date.now()-start.t<600)onTap(e);else if(start.moved&&V.mode==="refine")renderSheet();start=null}};
   st.addEventListener("pointerup",up);st.addEventListener("pointercancel",e=>{ptrs.delete(e.pointerId);start=null;pinch=null});
   st.addEventListener("wheel",e=>{e.preventDefault();V.fov=Math.max(25,Math.min(100,V.fov+e.deltaY*.05));V.dirty=true},{passive:false});
 }
+function tapUv(e){const r=V.stage.getBoundingClientRect();const ndc=new THREE.Vector2((e.clientX-r.left)/r.width*2-1,-((e.clientY-r.top)/r.height)*2+1);
+  const rc=new THREE.Raycaster();rc.setFromCamera(ndc,V.cam);const d=rc.ray.direction;return dirToUv([d.x,d.y,d.z])}
 function onTap(e){
-  const r=V.stage.getBoundingClientRect();const ndc=new THREE.Vector2((e.clientX-r.left)/r.width*2-1,-((e.clientY-r.top)/r.height)*2+1);
-  const rc=new THREE.Raycaster();rc.setFromCamera(ndc,V.cam);const d=rc.ray.direction;const [u,v]=dirToUv([d.x,d.y,d.z]);
+  const r=V.stage.getBoundingClientRect();const [u,v]=tapUv(e);
   if(V.mode==="draw"){V.draft.push([+u.toFixed(5),+v.toFixed(5)]);drawOverlay();renderSheet();return}
   if(V.mode==="link"){V.linkDraft=[+u.toFixed(5),+v.toFixed(5)];drawOverlay();renderSheet();return}
+  if(V.mode==="select"){V.seeds.push({u,v,neg:V.erase});updateSelection();renderSheet();return}
+  if(V.mode==="refine"&&V.ref){const R=V.ref;if(R.tool==="fill"){R.seeds.push({u,v,neg:false});computeRefine();renderSheet()}else if(R.tool!=="look"){R.gid=(R.gid||0)+1;brushAt(e);renderSheet()}return}
   const p=byId("photos",V.id);
   const hitLink=(p.links||[]).find(l=>{const d=uvToDir(l.u,l.v);const q=new THREE.Vector3(d[0],d[1],d[2]).project(V.cam);if(q.z>1)return false;const x=(q.x+1)/2*r.width,y=(1-q.y)/2*r.height;return Math.abs(x-(e.clientX-r.left))<95&&Math.abs(y-(e.clientY-r.top))<32});
   if(hitLink){goThrough(hitLink);return}
   const k=V.pano.hit(u,v);
-  if(k>0&&k<255&&p.walls[k-1]){V.sel=p.walls[k-1].id}else V.sel=null;drawOverlay();renderSheet();
+  if(k>0&&k<255&&p.walls[k-1]){selectWall(p.walls[k-1].id)}else{V.sel=null;V.preview=null;refreshCompose();drawOverlay();renderSheet()}
+}
+function selectWall(id){V.sel=id;V.preview=null;refreshCompose(id);drawOverlay();renderSheet()}
+/* -- 'tik op de muur' selectie -- */
+function selectionMask(){
+  const P=V.pano;const {MW,MH}=P.work();const N=MW*MH;const m=new Uint8Array(N);
+  for(const s of V.seeds){if(s.neg)continue;const g=P.grow(s.u,s.v,V.tol);for(let i=0;i<N;i++)if(g[i])m[i]=255}
+  for(const s of V.seeds){if(!s.neg)continue;const g=P.grow(s.u,s.v,V.tol);for(let i=0;i<N;i++)if(g[i])m[i]=0}
+  return {m:refineMask(m,MW,MH),MW,MH};
+}
+function updateSelection(){
+  const t0=performance.now();V.selMask=V.seeds.some(s=>!s.neg)?selectionMask():null;
+  refreshCompose();V.selMs=performance.now()-t0;
+}
+function highlightFn(sel){
+  if(!sel)return null;const P=V.pano,W=P.W,H=P.H,{m,MW,MH}=sel;const sx=MW/W,sy=MH/H;
+  return out=>{for(let Y=0;Y<H;Y++){const my=Math.min(MH-1,(Y*sy)|0)*MW;for(let X=0;X<W;X++){const a=m[my+((X*sx)|0)];if(!a)continue;const p=(Y*W+X)*4,k=a/255*.5;out[p]+=(123-out[p])*k;out[p+1]+=(155-out[p+1])*k;out[p+2]+=(240-out[p+2])*k}}};
+}
+function showMaskOverlay(sel){
+  if(!V||!V.scene)return;
+  if(!sel){if(V.ovMesh)V.ovMesh.visible=false;V.dirty=true;return}
+  const {m,MW,MH}=sel;
+  if(!V.ovCanvas||V.ovCanvas.width!==MW){V.ovCanvas=document.createElement("canvas");V.ovCanvas.width=MW;V.ovCanvas.height=MH;
+    if(V.ovMesh){V.scene.remove(V.ovMesh);V.ovMesh.material.map.dispose();V.ovMesh.material.dispose();V.ovMesh.geometry.dispose()}
+    const t=new THREE.CanvasTexture(V.ovCanvas);t.minFilter=THREE.LinearFilter;t.generateMipmaps=false;const g=new THREE.SphereGeometry(490,96,64);g.scale(-1,1,1);
+    V.ovMesh=new THREE.Mesh(g,new THREE.MeshBasicMaterial({map:t,transparent:true,depthTest:false}));V.ovMesh.renderOrder=3;V.scene.add(V.ovMesh)}
+  const x=V.ovCanvas.getContext("2d");const id=x.createImageData(MW,MH);const d=id.data;
+  for(let i=0,p=0;i<m.length;i++,p+=4){if(!m[i])continue;d[p]=123;d[p+1]=155;d[p+2]=240;d[p+3]=m[i]*.5}
+  x.putImageData(id,0,0);V.ovMesh.material.map.needsUpdate=true;V.ovMesh.visible=true;V.dirty=true;
 }
 function drawOverlay(){
   const g=V.overlay;while(g.children.length){const c=g.children.pop();c.geometry.dispose();c.material.dispose()}
@@ -783,13 +974,15 @@ function drawOverlay(){
   const line=(pts,closed,color,opacity=1)=>{const ds=polyDirs(pts,closed);if(closed)ds.push(ds[0]);const geo=new THREE.BufferGeometry().setFromPoints(ds.map(d=>new THREE.Vector3(d[0]*R,d[1]*R,d[2]*R)));const m=new THREE.LineBasicMaterial({color,transparent:true,opacity,depthTest:false});const l=new THREE.Line(geo,m);l.renderOrder=5;g.add(l)};
   const dots=(pts,color)=>{const geo=new THREE.BufferGeometry().setFromPoints(pts.map(([u,v])=>{const d=uvToDir(u,v);return new THREE.Vector3(d[0]*R,d[1]*R,d[2]*R)}));const m=new THREE.PointsMaterial({color,size:10,sizeAttenuation:false,depthTest:false});const o=new THREE.Points(geo,m);o.renderOrder=6;g.add(o)};
   const showAll=V.mode==="draw"||lsGet("showLines",false);
-  (p.walls||[]).forEach(w=>{if(w.id===V.sel){line(w.pts,true,0x7B9BF0);dots(w.pts,0xffffff)}else if(showAll)line(w.pts,true,w.exclude?0xE0A94D:0xffffff,.45)});
+  (p.walls||[]).forEach(w=>{if(!w.pts)return;if(w.id===V.sel&&V.mode==="look"){line(w.pts,true,0x7B9BF0);dots(w.pts,0xffffff)}else if(showAll)line(w.pts,true,w.exclude?0xE0A94D:0xffffff,.45)});
   if(V.mode==="draw"&&V.draft.length){line(V.draft,false,0xFFD84D);dots(V.draft,0xFFD84D);if(V.draft.length>2)line([V.draft[V.draft.length-1],V.draft[0]],false,0xFFD84D,.4)}
+  if(V.mode==="select"&&V.seeds.length){const pos=V.seeds.filter(s=>!s.neg).map(s=>[s.u,s.v]),neg=V.seeds.filter(s=>s.neg).map(s=>[s.u,s.v]);if(pos.length)dots(pos,0x7B9BF0);if(neg.length)dots(neg,0xEF7B6E)}
   drawLinks(p);V.dirty=true;
 }
 function linkLabel(l){const t=byId("photos",l.to);return l.label||(t?roomName(t.roomId)||t.name:"?")}
 function drawLinks(p){
   const g=V.linkG;while(g.children.length){const c=g.children.pop();c.material.map&&c.material.map.dispose();c.material.dispose()}
+  if(V.mode==="select")return;
   const mk=(u,v,text,draft)=>{const c=document.createElement("canvas");c.width=512;c.height=128;const x=c.getContext("2d");
     x.font="600 44px 'Instrument Sans', system-ui, sans-serif";const tw=Math.min(380,x.measureText(text).width);const w=tw+130,h=96,x0=(512-w)/2,y0=16;
     x.fillStyle=draft?"rgba(255,216,77,.95)":"rgba(12,16,15,.78)";x.strokeStyle="rgba(255,255,255,.95)";x.lineWidth=5;
@@ -807,94 +1000,193 @@ function goThrough(l){
   if(back){opts={lon:back.u*360+180,lat:0}}
   openViewer(t.id,opts);
 }
-function refreshViewer(force){
+function currentColors(){
+  const p=byId("photos",V.id);const v=activeVar(p);const cols=colorsFor(p,v);
+  if(V.preview&&V.sel){const i=(p.walls||[]).findIndex(w=>w.id===V.sel);if(i>=0)cols[i]=hexToRgb(V.preview)}
+  return cols;
+}
+function refreshCompose(flashId){
+  if(!V||!V.pano)return;const p=byId("photos",V.id);if(!p)return;
+  V.pano.setWalls(p.walls||[]);const cols=currentColors();
+  let extra=null;showMaskOverlay(V.mode==="select"?V.selMask:V.mode==="refine"&&V.ref?V.ref.cur:null);
+  if(flashId&&!extra){const k=(p.walls||[]).findIndex(w=>w.id===flashId)+1;const li=V.pano.lists[k];if(li&&!cols[k-1]){const A=V.pano.alpha;extra=out=>{for(let j=0;j<li.length;j++){const q=li[j]*4,s=A[li[j]]/255*.35;out[q]+=(123-out[q])*s;out[q+1]+=(155-out[q+1])*s;out[q+2]+=(240-out[q+2])*s}};
+    clearTimeout(V.flashT);V.flashT=setTimeout(()=>{if(V&&V.sel===flashId)refreshCompose()},900)}}
+  V.pano.compose(cols,V.smart,extra);V.lastColorsKey=JSON.stringify([V.pano.wallsKey,cols,V.smart]);V.tex.needsUpdate=true;
+  if(V.compare&&V.tex2)V.tex2.needsUpdate=true;V.dirty=true;
+}
+async function refreshViewer(force){
   if(!V||!V.pano)return;const p=byId("photos",V.id);if(!p){closeViewer();toast("Deze foto is verwijderd");return}
   const v=activeVar(p);const walls=p.walls||[];
-  if(V.pano.setNadir(p.nadir||0))V.lastColorsKey="";
+  if((walls).some(w=>w.mask&&!MASKS.has(w.mask))){const id=V.id;await loadMasksFor(p);if(!V||V.id!==id)return}
+  if(V.pano.setNadir(p.nadir||0)){V.lastColorsKey="";if(V.compare&&V.tex2)V.tex2.needsUpdate=true}
   V.pano.setWalls(walls);
-  const cols=colorsFor(p,v);const key=JSON.stringify([V.pano.wallsKey,cols,V.smart,V.showOrig]);
-  if(force||key!==V.lastColorsKey){V.lastColorsKey=key;if(V.showOrig)V.pano.original();else V.pano.compose(cols,V.smart);V.tex.needsUpdate=true;V.dirty=true}
+  const cols=currentColors();const key=JSON.stringify([V.pano.wallsKey,cols,V.smart]);
+  if((force||key!==V.lastColorsKey)&&V.mode!=="select")refreshCompose();
   const sel=$("#vvar",V.el);sel.innerHTML=(p.variants||[]).map(x=>`<option value="${x.id}" ${x.id===v.id?"selected":""}>${esc(x.name)}</option>`).join("");
   sel.onchange=()=>safe(()=>upd("photos",p.id,{activeVariant:sel.value}));
   $("#vvarnew",V.el).onclick=async()=>{const vs=p.variants||[];const name="Variant "+String.fromCharCode(65+vs.length);const nv={id:rid(),name,colors:{...(v.colors||{})}};await safe(()=>upd("photos",p.id,{variants:[...vs,nv],activeVariant:nv.id}));toast(`${name} gemaakt (kopie van ${v.name})`)};
   drawOverlay();renderSheet();
 }
-function refreshCompose(){const p=byId("photos",V.id);const v=activeVar(p);V.pano.setWalls(p.walls||[]);if(V.showOrig)V.pano.original();else V.pano.compose(colorsFor(p,v),V.smart);V.tex.needsUpdate=true;V.dirty=true}
 function guessNadir(P){/* zoek de bovenrand van een egale band onderin (logo/patch) */const W=P.W,H=P.H,o=P.base;let best=0,by=0;
   for(let y=Math.floor(H*.70);y<H*.97;y++){let d=0;for(let x=0;x<W;x+=4){const i=(y*W+x)*4,j=((y-2)*W+x)*4;d+=Math.abs(o[i]-o[j])+Math.abs(o[i+1]-o[j+1])+Math.abs(o[i+2]-o[j+2])}if(d>best){best=d;by=y}}
   return best/(W/4)>60?+((by-4)/H).toFixed(3):0}
+const darkInput='style="background:#1E2625;border-color:#2F3A38;color:#E8EEEC"';
+async function assignPaint(p,v,wallId,pid){
+  const vs=(p.variants&&p.variants.length?p.variants:[{id:"v1",name:"Variant A",colors:{}}]).map(x=>x.id===v.id?{...x,colors:{...(x.colors||{}),[wallId]:pid||null}}:x);
+  V.preview=null;await safe(()=>upd("photos",p.id,{variants:vs,activeVariant:v.id}));
+}
+function startRefine(w,isNew){
+  V.mode="refine";V.sel=null;V.preview=null;
+  V.ref={w,isNew,seeds:[],strokes:[],tol:lsGet("rtol",5),tool:"brushMinus",size:lsGet("brush",26),poly:null,auto:null,cur:null};
+  V.stage.style.cursor="wait";setTimeout(()=>{computeRefine();V.stage.style.cursor="";drawOverlay();renderSheet()},20);drawOverlay();renderSheet();
+}
+function computeRefine(){
+  const R=V.ref,P=V.pano;if(!R)return;const r=wallMaskInPoly(P,R.w.pts,R.tol,R.seeds);if(!r){R.cur=null;return}
+  R.poly=polyMaskSmall(R.w.pts,r.MW,r.MH);R.auto=r;const m=new Uint8Array(r.m);
+  for(const s of R.strokes)stampMask(m,r.MW,r.MH,s.u,s.v,s.r,s.val,R.poly);
+  R.cur={m,MW:r.MW,MH:r.MH};refreshCompose();
+}
+function brushAt(e){const R=V.ref;if(!R||!R.cur)return;const [u,v]=tapUv(e);const r=R.size/V.stage.clientHeight*V.fov*Math.PI/180;const val=R.tool==="brushPlus"?255:0;
+  R.strokes.push({u,v,r,val,g:R.gid});stampMask(R.cur.m,R.cur.MW,R.cur.MH,u,v,r,val,R.poly);showMaskOverlay(R.cur)}
 function renderSheet(){
   const p=byId("photos",V.id);if(!p)return;const sh=$("#vsheet",V.el);const v=activeVar(p);const walls=p.walls||[];
   const hint=$(".hint",V.el);if(hint)hint.remove();
+  const showHint=t=>{const h=document.createElement("div");h.className="hint";h.textContent=t;V.stage.appendChild(h)};
+  V.stage.classList.toggle("draw",V.mode!=="look");
+  if(V.mode==="refine"){
+    const R=V.ref;const tool=R.tool;
+    showHint(!R.cur?"Muur wordt uitgezocht…":tool==="look"?"Sleep om rond te kijken.":tool==="fill"?"Tik op een stuk muur dat nog mist.":tool==="brushPlus"?"Veeg over wat er nog bij moet.":"Veeg over wat niet geverfd moet worden, zoals een witte bank of kast.");
+    sh.innerHTML=`<div class="row between"><b>${esc(R.w.name)}: controleren</b><div class="row"><button class="btn sm" id="rundo" ${R.strokes.length||R.seeds.length?"":"disabled"}>Stap terug</button><button class="btn sm" id="rcancel">Annuleren</button><button class="btn sm primary" id="rsave" ${R.cur?"":"disabled"}>Opslaan</button></div></div>
+    <p class="small muted">Het blauwe deel wordt geverfd. Schilderijen, planten en meubels heeft de app er al uitgehaald. Klopt iets niet, gebruik dan de kwast. Met twee vingers (of Kijken) draai je rond.</p>
+    <div class="row"><div class="seg" role="group" aria-label="Gereedschap"><button data-tool="look" class="${tool==="look"?"on":""}">Kijken</button><button data-tool="brushMinus" class="${tool==="brushMinus"?"on":""}">Kwast: eraf</button><button data-tool="brushPlus" class="${tool==="brushPlus"?"on":""}">Kwast: erbij</button><button data-tool="fill" class="${tool==="fill"?"on":""}">Tik: aanvullen</button></div></div>
+    <div class="row small" style="gap:14px"><label class="row" style="gap:8px;flex:1;min-width:200px"><span class="muted">Kwastgrootte</span><input type="range" id="rsize" min="6" max="90" value="${R.size}" style="flex:1"></label>
+      <label class="row" style="gap:8px;flex:1;min-width:200px"><span class="muted">Hoe streng</span><input type="range" id="rtol" min="1" max="10" step="0.5" value="${R.tol}" style="flex:1" title="Lager: meer voorwerpen eruit. Hoger: meer muur erbij."></label></div>`;
+    sh.querySelectorAll("[data-tool]").forEach(b=>b.onclick=()=>{R.tool=b.dataset.tool;renderSheet()});
+    $("#rsize",sh).oninput=e=>{R.size=+e.target.value;lsSet("brush",R.size)};
+    $("#rtol",sh).onchange=e=>{R.tol=+e.target.value;lsSet("rtol",R.tol);computeRefine()};
+    $("#rundo",sh).onclick=()=>{if(R.strokes.length){const g=R.strokes[R.strokes.length-1].g;while(R.strokes.length&&R.strokes[R.strokes.length-1].g===g)R.strokes.pop()}else R.seeds.pop();computeRefine();renderSheet()};
+    $("#rcancel",sh).onclick=()=>{V.mode="look";V.ref=null;refreshCompose();drawOverlay();renderSheet()};
+    $("#rsave",sh).onclick=async e=>{e.target.disabled=true;e.target.textContent="Opslaan…";
+      try{const {m,MW,MH}=R.cur;const blob=await maskToBlob(m,MW,MH);const a=await assets.upload(blob);MASKS.set(a.id,{w:MW,h:MH,data:m});
+        const cur=byId("photos",V.id);const ws=cur.walls||[];const w={...R.w,mask:a.id,mw:MW,mh:MH};
+        const next=R.isNew?[...ws,w]:ws.map(x=>x.id===w.id?w:x);V.mode="look";V.ref=null;V.sel=w.id;V.draftName="";V.draftM2="";
+        await safe(()=>upd("photos",cur.id,{walls:next}));toast(R.isNew?"Muur opgeslagen. Kies nu een kleur.":"Muur bijgewerkt.")}
+      catch(err){console.error(err);toast("Opslaan lukte niet. Probeer het opnieuw.");renderSheet()}};
+    return;
+  }
+  if(V.mode==="select"){
+    const has=!!V.selMask;showHint(V.erase?"Gum: tik op wat er niet bij hoort.":has?"Tik nog een stuk aan om het toe te voegen, of kies Gum.":"Tik op de muur die je wilt verven.");
+    sh.innerHTML=`<div class="row between"><b>Muur selecteren</b><div class="row"><button class="btn sm" id="sundo" ${V.seeds.length?"":"disabled"}>Stap terug</button><button class="btn sm" id="scancel">Annuleren</button><button class="btn sm primary" id="ssave" ${has?"":"disabled"}>Opslaan</button></div></div>
+    <div class="row"><div class="seg" role="group" aria-label="Gereedschap"><button class="${V.erase?"":"on"}" id="sadd">+ Toevoegen</button><button class="${V.erase?"on":""}" id="ser">Gum</button></div>
+      <label class="row small" style="gap:8px;flex:1;min-width:220px"><span class="muted">Gevoeligheid</span><input type="range" id="stol" min="1" max="10" step="0.5" value="${V.tol}" style="flex:1"><span class="mono" id="stolv">${V.tol}</span></label></div>
+    <div class="row"><label class="small muted" style="flex:1;min-width:180px">Naam<input type="text" id="sname" value="${esc(V.draftName||"")}" placeholder="bijv. Muur achter de bank" ${darkInput}></label><label class="small muted" style="width:110px">m² (optioneel)<input type="number" id="sm2" value="${esc(V.draftM2||"")}" step="any" inputmode="decimal" ${darkInput}></label></div>
+    <p class="small muted">Loopt de selectie over op een andere muur of het plafond? Zet de gevoeligheid lager of haal het weg met Gum. Mist er een stuk? Tik het aan. Zoom in voor precisie.</p>`;
+    $("#sname",sh).oninput=e=>V.draftName=e.target.value;$("#sm2",sh).oninput=e=>V.draftM2=e.target.value;
+    $("#sadd",sh).onclick=()=>{V.erase=false;renderSheet()};$("#ser",sh).onclick=()=>{V.erase=true;renderSheet()};
+    const tl=$("#stol",sh);tl.oninput=()=>$("#stolv",sh).textContent=tl.value;tl.onchange=()=>{V.tol=+tl.value;lsSet("tol",V.tol);if(V.seeds.length){updateSelection()}};
+    $("#sundo",sh).onclick=()=>{V.seeds.pop();updateSelection();drawOverlay();renderSheet()};
+    $("#scancel",sh).onclick=()=>{V.mode="look";V.seeds=[];V.selMask=null;V.draftName="";V.draftM2="";refreshCompose();drawOverlay();renderSheet()};
+    $("#ssave",sh).onclick=async e=>{if(!assets){toast("Opslaan van een selectie kan alleen met Editor-rechten.");return}
+      e.target.disabled=true;e.target.textContent="Opslaan…";
+      try{const {m,MW,MH}=V.selMask;const blob=await maskToBlob(m,MW,MH);const a=await assets.upload(blob);MASKS.set(a.id,{w:MW,h:MH,data:m});
+        const name=($("#sname",sh).value||"").trim()||"Muur "+(walls.filter(w=>!w.exclude).length+1);
+        const w={id:rid(),name,mask:a.id,mw:MW,mh:MH,exclude:false,m2:num($("#sm2",sh).value)||""};
+        V.mode="look";V.seeds=[];V.selMask=null;V.draftName="";V.draftM2="";V.sel=w.id;
+        await safe(()=>upd("photos",p.id,{walls:[...walls,w]}));toast("Muur opgeslagen. Kies nu een kleur.")}
+      catch(err){console.error(err);toast("Opslaan lukte niet. Probeer het opnieuw.");renderSheet()}};
+    return;
+  }
   if(V.mode==="draw"){
-    V.stage.classList.add("draw");
-    const h=document.createElement("div");h.className="hint";h.textContent=V.draftExclude?"Tik de hoeken van het raam, de deur of de radiator aan.":"Tik de hoeken van de muur aan: links-boven, rechts-boven, rechts-onder, links-onder. Slepen = rondkijken.";V.stage.appendChild(h);
-    sh.innerHTML=`<div class="row between"><b>${V.draftExclude?"Uitsparing tekenen":"Muur tekenen"} · ${V.draft.length} punt${V.draft.length===1?"":"en"}</b><div class="row"><button class="btn sm" id="dundo" ${V.draft.length?"":"disabled"}>Punt terug</button><button class="btn sm" id="dcancel">Annuleren</button><button class="btn sm primary" id="ddone" ${V.draft.length>2?"":"disabled"}>Klaar</button></div></div>
-    <div class="row"><label class="small muted" style="flex:1;min-width:180px">Naam<input type="text" id="dname" value="${esc(V.draftName||"")}" placeholder="${V.draftExclude?"bijv. Raam links":"bijv. Muur achter de bank"}" style="background:#1E2625;border-color:#2F3A38;color:#E8EEEC"></label><label class="small muted" style="width:110px">m² (optioneel)<input type="number" id="dm2" value="${esc(V.draftM2||"")}" step="any" inputmode="decimal" style="background:#1E2625;border-color:#2F3A38;color:#E8EEEC"></label></div>
-    <p class="small muted">Tip: zoom in (knijpen of scrollen) voor precieze hoeken. Volg bij een muur de hoeken van vloer en plafond. Kozijnen, deuren en radiatoren kun je daarna met een uitsparing uitsluiten.</p>`;
+    showHint(V.draftExclude?"Tik de hoeken van het raam, de deur of de radiator aan.":"Tik de 4 hoeken van de muur aan, waar muur, plafond en vloer elkaar raken. Slepen = rondkijken.");
+    sh.innerHTML=`<div class="row between"><b>${V.draftExclude?"Uitsparing tekenen":"Muur tekenen"} · ${V.draft.length} punt${V.draft.length===1?"":"en"}</b><div class="row"><button class="btn sm" id="dundo" ${V.draft.length?"":"disabled"}>Punt terug</button><button class="btn sm" id="dcancel">Annuleren</button><button class="btn sm primary" id="ddone" ${V.draft.length>2?"":"disabled"}>${V.draftExclude||!assets?"Klaar":"Volgende"}</button></div></div>
+    <div class="row"><label class="small muted" style="flex:1;min-width:180px">Naam<input type="text" id="dname" value="${esc(V.draftName||"")}" placeholder="${V.draftExclude?"bijv. Raam links":"bijv. Muur achter de bank"}" ${darkInput}></label><label class="small muted" style="width:110px">m² (optioneel)<input type="number" id="dm2" value="${esc(V.draftM2||"")}" step="any" inputmode="decimal" ${darkInput}></label></div>
+    <p class="small muted">Tip: zoom in (knijpen of scrollen) voor precieze hoeken. Volg bij een muur de hoeken van vloer en plafond.</p>`;
     $("#dname",sh).oninput=e=>V.draftName=e.target.value;$("#dm2",sh).oninput=e=>V.draftM2=e.target.value;
     $("#dundo",sh).onclick=()=>{V.draft.pop();drawOverlay();renderSheet()};
-    $("#dcancel",sh).onclick=()=>{V.mode="look";V.draft=[];V.draftName="";V.stage.classList.remove("draw");drawOverlay();renderSheet()};
+    $("#dcancel",sh).onclick=()=>{V.mode="look";V.draft=[];V.draftName="";drawOverlay();renderSheet()};
     $("#ddone",sh).onclick=async()=>{const name=($("#dname",sh).value||"").trim()||(V.draftExclude?"Uitsparing":"Muur "+(walls.filter(w=>!w.exclude).length+1));
       const w={id:rid(),name,pts:V.draft,exclude:V.draftExclude,m2:num($("#dm2",sh).value)||""};
-      V.mode="look";V.draft=[];V.draftName="";V.draftM2="";V.stage.classList.remove("draw");V.sel=w.exclude?null:w.id;
+      if(!w.exclude&&assets){V.draft=[];startRefine(w,true);return}
+      V.mode="look";V.draft=[];V.draftName="";V.draftM2="";V.sel=w.exclude?null:w.id;
       await safe(()=>upd("photos",p.id,{walls:[...walls,w]}))};
     return;
   }
-  V.stage.classList.remove("draw");
   if(V.mode==="link"){
-    V.stage.classList.add("draw");const h=document.createElement("div");h.className="hint";h.textContent=V.linkDraft?"Kies hieronder waar deze doorgang naartoe gaat.":"Tik op de deur, trap of doorgang waar je naartoe wilt kunnen lopen.";V.stage.appendChild(h);
+    showHint(V.linkDraft?"Kies hieronder waar deze doorgang naartoe gaat.":"Tik op de deur, trap of doorgang waar je naartoe wilt kunnen lopen.");
     const others=S.photos.filter(x=>x.id!==p.id).sort((a,b)=>(byId("rooms",a.roomId)?.order??99)-(byId("rooms",b.roomId)?.order??99));
     sh.innerHTML=`<div class="row between"><b>Doorgang maken</b><div class="row"><button class="btn sm" id="lcancel">Annuleren</button><button class="btn sm primary" id="lsave" ${V.linkDraft?"":"disabled"}>Opslaan</button></div></div>
     ${others.length?`<div class="row"><label class="small muted" style="flex:1;min-width:200px">Gaat naar<select id="lto" style="width:100%">${others.map(x=>`<option value="${x.id}">${esc(roomName(x.roomId)||"Zonder kamer")} · ${esc(x.name||"foto")}</option>`).join("")}</select></label>
-    <label class="small muted" style="flex:1;min-width:160px">Label (optioneel)<input type="text" id="llabel" placeholder="bijv. Trap omhoog" style="background:#1E2625;border-color:#2F3A38;color:#E8EEEC"></label></div>`:`<p class="small muted">Er zijn nog geen andere 360°-foto's om naartoe te gaan.</p>`}
-    <p class="small muted">Tip: maak in de andere foto ook een doorgang terug. Dan kijk je bij aankomst automatisch de goede kant op.</p>`;
+    <label class="small muted" style="flex:1;min-width:160px">Label (optioneel)<input type="text" id="llabel" placeholder="bijv. Trap omhoog" ${darkInput}></label></div>`:`<p class="small muted">Er zijn nog geen andere 360°-foto's om naartoe te gaan.</p>`}`;
     $("#lcancel",sh).onclick=()=>{V.mode="look";V.linkDraft=null;drawOverlay();renderSheet()};
     $("#lsave",sh).onclick=async()=>{const to=$("#lto",sh)?.value;if(!to||!V.linkDraft)return;const l={id:rid(),u:V.linkDraft[0],v:V.linkDraft[1],to,label:($("#llabel",sh).value||"").trim()};
       V.mode="look";V.linkDraft=null;await safe(()=>upd("photos",p.id,{links:[...(p.links||[]),l]}));toast("Doorgang opgeslagen. Tik erop om erheen te gaan.")};
     return;
   }
-  const sw=walls.find(w=>w.id===V.sel);const curPaint=sw?(v.colors||{})[sw.id]:null;
+  /* ---- kijkmodus ---- */
+  const sw=walls.find(w=>w.id===V.sel);const curPaint=sw?(v.colors||{})[sw.id]:null;const cp=curPaint?byId("paints",curPaint):null;
   const roomPaintIds=new Set(roomPaints(p.roomId).map(x=>x.id));
   const pals=[...S.paints].sort((a,b)=>(roomPaintIds.has(b.id)-roomPaintIds.has(a.id))||(b.createdAt||0)-(a.createdAt||0));
-  const links=p.links||[];
-  sh.innerHTML=`<div class="row small" style="gap:6px"><span class="muted">Doorgangen:</span>${links.map(l=>`<span class="wchip"><span data-go="${l.id}">→ ${esc(linkLabel(l))}</span><span data-ldel="${l.id}" title="Verwijderen" style="opacity:.6;padding-left:4px">✕</span></span>`).join("")||`<span class="muted">nog geen</span>`}<button class="btn sm" id="vlink">+ Doorgang</button><button class="btn sm" id="vstart" title="Zo kijk je als je deze foto opent">Startbeeld opslaan</button></div>
-  <div class="row" style="gap:6px">${walls.map(w=>{const pa=byId("paints",(v.colors||{})[w.id]);return `<span class="wchip ${w.id===V.sel?"on":""}" data-w="${w.id}">${w.exclude?"⊘":`<span class="dot" style="background:${pa?esc(pa.hex):"transparent"};border-color:#5b6866"></span>`} ${esc(w.name)}</span>`}).join("")}
-    <button class="btn sm primary" id="vadd">+ Muur</button><button class="btn sm" id="vexcl" title="Raam, deur of radiator uitsluiten">+ Uitsparing</button></div>
-  ${walls.length===0?`<p class="small muted">Nog geen muren. Tik op <b>+ Muur</b> en daarna op de hoeken van een muur. Daarna kun je die muur een kleur geven.</p>`:""}
-  ${sw?(sw.exclude?`<div class="row between"><span class="small">Uitsparing <b>${esc(sw.name)}</b> wordt nooit geverfd.</span><button class="btn sm danger" id="wdel">Verwijderen</button></div>`:
-  `<div class="row between"><b>${esc(sw.name)}</b><div class="row"><button class="btn sm" id="wren">Naam / m²</button><button class="btn sm danger" id="wdel">Verwijderen</button></div></div>
-   <div class="pal"><button data-paint="" class="${curPaint?"":"on"}"><span class="sw" style="background:repeating-linear-gradient(45deg,#2a3331 0 6px,#1b2221 6px 12px)"></span>Origineel</button>
-   ${pals.map(pa=>`<button data-paint="${pa.id}" class="${curPaint===pa.id?"on":""}" title="${esc([pa.brand,pa.code].filter(Boolean).join(" "))}"><span class="sw" style="background:${esc(pa.hex)}"></span>${esc((pa.name||pa.hex).slice(0,14))}</button>`).join("")}
-   <button data-paint="__new"><span class="sw" style="display:grid;place-items:center;font-size:20px;background:#1E2625">+</span>Nieuwe kleur</button></div>
-   ${curPaint&&byId("paints",curPaint)?(()=>{const pa=byId("paints",curPaint);return `<div class="small muted mono">${esc([pa.brand,pa.code,pa.sheen].filter(Boolean).join(" · ")||"Nog geen merk/code")} · ${esc(pa.hex)} <a href="#" id="wpe" style="color:#9DB4F5">bewerk kleur</a></div>`})():""}`)
-  :walls.length?`<p class="small muted">Tik op een muur in de foto of op een naam hierboven om hem te kiezen.</p>`:""}
-  <div class="row between small"><label class="row" style="gap:6px"><input type="checkbox" id="vsmart" ${V.smart?"checked":""}> Slim maskeren <span class="muted">(stopcontacten, lijsten en schaduwen behouden)</span></label>
-   <label class="row" style="gap:6px"><input type="checkbox" id="vlines" ${lsGet("showLines",false)?"checked":""}> Lijnen tonen</label>
-   <button class="btn sm" id="vorig">Houd vast: origineel</button></div>
-  <div class="row small"><label class="row" style="gap:6px"><input type="checkbox" id="vnadir" ${p.nadir?"checked":""}> Onderkant opvullen <span class="muted">(logo of statief weg)</span></label>
-   ${p.nadir?`<input type="range" id="vnadirr" min="0.70" max="0.97" step="0.002" value="${p.nadir}" style="flex:1;min-width:140px" aria-label="Vanaf hoe ver opvullen"><span class="muted">schuif tot het logo net weg is</span>`:""}</div>`;
-  sh.querySelectorAll("[data-w]").forEach(b=>b.onclick=()=>{V.sel=b.dataset.w;drawOverlay();renderSheet()});
+  const links=p.links||[];const prevName=V.previewName||"Voorbeeld";
+  const sw_=(hex,label,attrs,on)=>`<button class="swb ${on?"on":""}" ${attrs} title="${esc(label)}"><span class="sw" style="background:${esc(hex)}"></span><span class="nm">${esc(label)}</span></button>`;
+  let panel="";
+  if(sw&&!sw.exclude){
+    const tab=V.tab;
+    panel=`<div class="wallhead"><span class="bigsw" style="background:${V.preview?esc(V.preview):cp?esc(cp.hex):"repeating-linear-gradient(45deg,#2a3331 0 6px,#1b2221 6px 12px)"}"></span>
+      <div style="flex:1;min-width:0"><div class="eyebrow" style="color:#94A39F">${esc(sw.name)}${num(sw.m2)?` · ${num(sw.m2)} m²`:""}</div>
+      <div class="wn">${V.preview?esc(prevName)+` <span class="mono small">${esc(V.preview)}</span>`:cp?esc(cp.name||cp.hex):"Originele kleur"}</div>
+      <div class="small muted mono">${V.preview?"voorbeeld, nog niet opgeslagen":cp?esc([cp.brand,cp.code,cp.sheen].filter(Boolean).join(" · ")||"nog geen merk of code"):"tik een kleur aan om te proberen"}</div></div>
+      <div class="row" style="gap:6px">${V.preview?`<button class="btn sm primary" id="psave">Gebruik deze kleur</button><button class="btn sm" id="pcancel">Terug</button>`:`${cp?`<button class="btn sm" id="wpe">Merk & code</button>`:""}${sw.pts&&assets?`<button class="btn sm" id="wref" title="Voorwerpen eruit halen of stukken toevoegen">Verfijnen</button>`:""}<button class="btn sm" id="wren">Naam / m²</button><button class="btn sm danger" id="wdel" aria-label="Muur verwijderen">✕</button>`}</div></div>
+    <div class="tabs2" role="tablist"><button role="tab" class="${tab==="eigen"?"on":""}" data-tab="eigen">Jullie kleuren${pals.length?` · ${pals.length}`:""}</button><button role="tab" class="${tab==="insp"?"on":""}" data-tab="insp">Inspiratie</button><button role="tab" class="${tab==="vrij"?"on":""}" data-tab="vrij">Eigen kleur</button></div>
+    ${tab==="eigen"?`<div class="palgrid">${sw_("repeating-linear-gradient(45deg,#2a3331 0 6px,#1b2221 6px 12px)","Origineel",'data-paint=""',!curPaint&&!V.preview)}${pals.map(pa=>sw_(pa.hex,pa.name||pa.hex,`data-paint="${pa.id}"`,curPaint===pa.id&&!V.preview)).join("")}</div>
+      ${pals.length?"":`<p class="small muted">Nog geen eigen kleuren. Kies er een bij Inspiratie of Eigen kleur, en sla hem op met merk en kleurcode.</p>`}`:""}
+    ${tab==="insp"?INSPIRATIE.map(([g,cs])=>`<div><div class="eyebrow" style="color:#94A39F;margin-bottom:4px">${esc(g)}</div><div class="palgrid">${cs.map(([n,h])=>sw_(h,n,`data-prev="${h}" data-pn="${esc(n)}"`,V.preview===h)).join("")}</div></div>`).join("")+`<p class="small muted">Dit zijn algemene tinten, geen merkkleuren. Vind je er een mooi, zoek dan de dichtstbijzijnde kleur op de waaier van je verfmerk en vul die code in.</p>`:""}
+    ${tab==="vrij"?`<div class="row"><input type="color" id="vcol" value="${esc(V.preview||cp?.hex||"#B7BFA6")}" style="width:64px;height:44px;padding:0;border:1px solid #2F3A38;border-radius:8px;background:none"><input type="text" id="vhex" class="mono" value="${esc(V.preview||cp?.hex||"")}" placeholder="#RRGGBB" style="max-width:140px;background:#1E2625;border-color:#2F3A38;color:#E8EEEC"><span class="small muted">Je ziet de kleur meteen op de muur.</span></div>`:""}`;
+  }else if(sw&&sw.exclude){
+    panel=`<div class="row between"><span class="small">Uitsparing <b>${esc(sw.name)}</b> wordt nooit geverfd.</span><button class="btn sm danger" id="wdel">Verwijderen</button></div>`;
+  }else if(walls.some(w=>!w.exclude)){
+    panel=`<p class="small muted">Tik op een muur in de foto, of op een naam hierboven, om een kleur te kiezen.</p>`;
+  }else{
+    panel=`<p class="small muted">Nog geen muren. Tik op <b>+ Muur</b> en daarna op de 4 hoeken van een muur. De app haalt zelf schilderijen, planten en meubels eruit.</p>`;
+  }
+  sh.innerHTML=`<div class="row" style="gap:6px">${walls.filter(w=>w.id!=="logo").map(w=>{const pa=byId("paints",(v.colors||{})[w.id]);return `<span class="wchip ${w.id===V.sel?"on":""}" data-w="${w.id}">${w.exclude?"⊘":`<span class="dot" style="background:${pa?esc(pa.hex):"transparent"};border-color:#5b6866"></span>`} ${esc(w.name)}</span>`}).join("")}
+    <button class="btn sm primary" id="vadd">+ Muur</button></div>
+  ${panel}
+  <details class="more" ${lsGet("moreOpen",false)?"open":""}><summary>Meer: hoeken tekenen, uitsparingen, doorgangen, instellingen</summary>
+   <div class="stack" style="gap:10px;margin-top:10px">
+   <div class="row" style="gap:6px"><button class="btn sm" id="vsel" title="Werkt goed bij gekleurde muren">Snel: tik op een gekleurde muur</button><button class="btn sm" id="vexcl" title="Raam, deur of radiator uitsluiten">+ Uitsparing</button></div>
+   <div class="row small" style="gap:6px"><span class="muted">Doorgangen:</span>${links.map(l=>`<span class="wchip"><span data-go="${l.id}">→ ${esc(linkLabel(l))}</span><span data-ldel="${l.id}" title="Verwijderen" style="opacity:.6;padding-left:4px">✕</span></span>`).join("")||`<span class="muted">nog geen</span>`}<button class="btn sm" id="vlink">+ Doorgang</button><button class="btn sm" id="vstart" title="Zo kijk je als je deze foto opent">Startbeeld opslaan</button></div>
+   <div class="row between small"><label class="row" style="gap:6px"><input type="checkbox" id="vsmart" ${V.smart?"checked":""}> Slim maskeren <span class="muted">(stopcontacten en lijsten behouden)</span></label>
+    <label class="row" style="gap:6px"><input type="checkbox" id="vlines" ${lsGet("showLines",false)?"checked":""}> Lijnen tonen</label></div>
+   <div class="row small"><label class="row" style="gap:6px"><input type="checkbox" id="vnadir" ${p.nadir?"checked":""}> Onderkant opvullen <span class="muted">(logo of statief weg)</span></label>
+    ${p.nadir?`<input type="range" id="vnadirr" min="0.70" max="0.97" step="0.002" value="${p.nadir}" style="flex:1;min-width:140px" aria-label="Vanaf hoe ver opvullen">`:""}</div>
+   </div></details>`;
+  $(".more",sh).ontoggle=e=>lsSet("moreOpen",e.target.open);
+  sh.querySelectorAll("[data-w]").forEach(b=>b.onclick=()=>selectWall(b.dataset.w));
+  $("#vsel",sh).onclick=()=>{V.mode="select";V.seeds=[];V.selMask=null;V.erase=false;V.sel=null;V.preview=null;refreshCompose();drawOverlay();renderSheet()};
   $("#vlink",sh).onclick=()=>{V.mode="link";V.linkDraft=null;V.sel=null;drawOverlay();renderSheet()};
   $("#vstart",sh).onclick=async()=>{await safe(()=>upd("photos",p.id,{startLon:+(((V.lon%360)+360)%360).toFixed(1),startLat:+V.lat.toFixed(1)}));toast("Startbeeld opgeslagen")};
   sh.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{const l=links.find(x=>x.id===b.dataset.go);if(l)goThrough(l)});
   sh.querySelectorAll("[data-ldel]").forEach(b=>b.onclick=async()=>{if(!await confirmBox("Deze doorgang verwijderen?"))return;await safe(()=>upd("photos",p.id,{links:links.filter(x=>x.id!==b.dataset.ldel)}))});
   $("#vadd",sh).onclick=()=>{V.mode="draw";V.draftExclude=false;V.draft=[];V.sel=null;drawOverlay();renderSheet()};
   $("#vexcl",sh).onclick=()=>{V.mode="draw";V.draftExclude=true;V.draft=[];V.sel=null;drawOverlay();renderSheet()};
-  $("#vsmart",sh).onchange=e=>{V.smart=e.target.checked;lsSet("smart",V.smart);refreshViewer()};
+  $("#vsmart",sh).onchange=e=>{V.smart=e.target.checked;lsSet("smart",V.smart);refreshCompose()};
   $("#vlines",sh).onchange=e=>{lsSet("showLines",e.target.checked);drawOverlay()};
   $("#vnadir",sh).onchange=e=>safe(()=>upd("photos",p.id,{nadir:e.target.checked?(guessNadir(V.pano)||0.84):0}));
-  const nr=$("#vnadirr",sh);if(nr){nr.oninput=()=>{V.pano.setNadir(+nr.value);V.lastColorsKey="";refreshCompose()};nr.onchange=()=>safe(()=>upd("photos",p.id,{nadir:+nr.value}))}
-  const ob=$("#vorig",sh);const on=()=>{V.showOrig=true;refreshViewer()},off=()=>{if(V.showOrig){V.showOrig=false;refreshViewer()}};
-  ob.addEventListener("pointerdown",on);ob.addEventListener("pointerup",off);ob.addEventListener("pointerleave",off);ob.addEventListener("pointercancel",off);
-  if(sw){
-    $("#wdel",sh).onclick=async()=>{if(!await confirmBox(`“${sw.name}” verwijderen?`))return;const vs=(p.variants||[]).map(x=>{const c={...(x.colors||{})};delete c[sw.id];return{...x,colors:c}});V.sel=null;await safe(()=>upd("photos",p.id,{walls:walls.filter(w=>w.id!==sw.id),variants:vs}))};
-    const ren=$("#wren",sh);if(ren)ren.onclick=async()=>{const r=await form("Muur",[{k:"name",label:"Naam",full:true},{k:"m2",label:"Oppervlakte (m²)",type:"number"}],sw);if(r)await safe(()=>upd("photos",p.id,{walls:walls.map(w=>w.id===sw.id?{...w,...r}:w)}))};
-    const pe=$("#wpe",sh);if(pe)pe.onclick=e=>{e.preventDefault();editPaint(curPaint)};
-    sh.querySelectorAll("[data-paint]").forEach(b=>b.onclick=async()=>{let pid=b.dataset.paint;if(pid==="__new"){pid=await newPaint({m2:sw.m2||""});if(!pid)return}
-      const vs=(p.variants&&p.variants.length?p.variants:[{id:"v1",name:"Variant A",colors:{}}]).map(x=>x.id===v.id?{...x,colors:{...(x.colors||{}),[sw.id]:pid||null}}:x);
-      await safe(()=>upd("photos",p.id,{variants:vs,activeVariant:v.id}))});
-  }
+  const nr=$("#vnadirr",sh);if(nr){nr.oninput=()=>{V.pano.setNadir(+nr.value);refreshCompose()};nr.onchange=()=>safe(()=>upd("photos",p.id,{nadir:+nr.value}))}
+  if(!sw)return;
+  $("#wdel",sh)&&($("#wdel",sh).onclick=async()=>{if(!await confirmBox(`“${sw.name}” verwijderen?`))return;const vs=(p.variants||[]).map(x=>{const c={...(x.colors||{})};delete c[sw.id];return{...x,colors:c}});V.sel=null;await safe(()=>upd("photos",p.id,{walls:walls.filter(w=>w.id!==sw.id),variants:vs}))});
+  const ren=$("#wren",sh);if(ren)ren.onclick=async()=>{const r=await form("Muur",[{k:"name",label:"Naam",full:true},{k:"m2",label:"Oppervlakte (m²)",type:"number"}],sw);if(r)await safe(()=>upd("photos",p.id,{walls:walls.map(w=>w.id===sw.id?{...w,...r}:w)}))};
+  const pe=$("#wpe",sh);if(pe)pe.onclick=()=>editPaint(curPaint);
+  const wr=$("#wref",sh);if(wr)wr.onclick=()=>startRefine({...sw},false);
+  sh.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{V.tab=b.dataset.tab;lsSet("palTab",V.tab);renderSheet()});
+  sh.querySelectorAll("[data-paint]").forEach(b=>b.onclick=()=>assignPaint(p,v,sw.id,b.dataset.paint||null));
+  const setPrev=(hex,name)=>{V.preview=hex;V.previewName=name;refreshCompose();renderSheet()};
+  sh.querySelectorAll("[data-prev]").forEach(b=>b.onclick=()=>setPrev(b.dataset.prev,b.dataset.pn));
+  const vc=$("#vcol",sh),vh=$("#vhex",sh);
+  if(vc){let t;vc.oninput=()=>{vh.value=vc.value.toUpperCase();V.preview=vc.value.toUpperCase();V.previewName="Eigen kleur";clearTimeout(t);t=setTimeout(refreshCompose,60)};vc.onchange=()=>setPrev(vc.value.toUpperCase(),"Eigen kleur");
+    vh.onchange=()=>{const c=hexToRgb(vh.value);if(c)setPrev(rgbToHex(...c),"Eigen kleur")}}
+  const ps=$("#psave",sh);if(ps)ps.onclick=async()=>{const pid=await newPaint({hex:V.preview,name:V.previewName&&V.previewName!=="Eigen kleur"?V.previewName:"",m2:sw.m2||""});if(pid)await assignPaint(p,v,sw.id,pid)};
+  const pc=$("#pcancel",sh);if(pc)pc.onclick=()=>{V.preview=null;refreshCompose();renderSheet()};
 }
 
 /* ---------- export per kamer ---------- */
@@ -903,7 +1195,7 @@ async function exportRoom(roomId){
   const r=byId("rooms",roomId);
   await withBusy("Kamer-export maken…",async tt=>{
     const ph=S.photos.filter(p=>p.roomId===roomId);const panos=[];
-    for(const p of ph){tt.textContent=`Foto “${p.name}” renderen…`;const img=await loadImg(assetUrl(p.assetId));const pano=new Pano(img,4096);pano.setNadir(p.nadir||0);pano.setWalls(p.walls||[]);const v=activeVar(p);pano.compose(colorsFor(p,v),lsGet("smart",true));
+    for(const p of ph){tt.textContent=`Foto “${p.name}” renderen…`;const img=await loadImg(assetUrl(p.assetId));await loadMasksFor(p);const pano=new Pano(img,4096);pano.setNadir(p.nadir||0);pano.setWalls(p.walls||[]);const v=activeVar(p);pano.compose(colorsFor(p,v),lsGet("smart",true));
       const c=document.createElement("canvas");c.width=Math.min(4096,pano.W);c.height=c.width/2;c.getContext("2d").drawImage(pano.canvas,0,0,c.width,c.height);
       panos.push({name:p.name,variant:v.name,src:c.toDataURL("image/jpeg",.85),walls:(p.walls||[]).filter(w=>!w.exclude).map(w=>({name:w.name,m2:w.m2,paint:byId("paints",(v.colors||{})[w.id])}))})}
     tt.textContent="Moodboard verzamelen…";const mood=[];
