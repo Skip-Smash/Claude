@@ -5,22 +5,23 @@
 <style>
 /* Layout: sticky kop met tab-strip; kaarten alleen waar iets een los object is. Labels als stukjes schilderstape. */
 :root{
-  --paper:#EEF1EE; --card:#FFFFFF; --ink:#1C2423; --muted:#5B6866; --line:#D3DAD6; --soft:#E3E8E5;
-  --tape:#2D5BD0; --tape-ink:#FFFFFF; --tape-soft:#DCE4F8;
-  --ok:#2E7D4F; --ok-soft:#DCEFE3; --warn:#A86A12; --warn-soft:#F6EAD3; --bad:#B23A2E;
+  /* palet gemeten uit de Pinterest-verzameling 'woonkamer': linnen, greige, eiken, olijf, espresso */
+  --paper:#F3EFE9; --card:#FCFAF7; --ink:#2A211B; --muted:#74685E; --line:#E3DCD2; --soft:#EBE5DC;
+  --tape:#6B6440; --tape-ink:#FFFFFF; --tape-soft:#E8E3D2; --oak:#9C7E61;
+  --ok:#5E7A4A; --ok-soft:#E4EAD9; --warn:#9A6A2C; --warn-soft:#F3E6D2; --bad:#A8432F;
   --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
   --f-body:"Instrument Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
   --f-mono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
-  --r:10px;
+  --r:16px;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --paper:#111615; --card:#192120; --ink:#E4EBE8; --muted:#93A29F; --line:#2B3634; --soft:#212A29;
-  --tape:#7B9BF0; --tape-ink:#0D1424; --tape-soft:#1E2945;
-  --ok:#6CC08F; --ok-soft:#173326; --warn:#E0A94D; --warn-soft:#3A2C14; --bad:#EF7B6E; color-scheme:dark}}
+  --paper:#16120F; --card:#201A16; --ink:#EFE8DF; --muted:#A89C8F; --line:#3A302A; --soft:#2A231E;
+  --tape:#C2B98A; --tape-ink:#1E1A10; --tape-soft:#3A3524; --oak:#C4A07C;
+  --ok:#9DB98A; --ok-soft:#24301E; --warn:#D9A866; --warn-soft:#3A2C18; --bad:#E58A72; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --paper:#111615; --card:#192120; --ink:#E4EBE8; --muted:#93A29F; --line:#2B3634; --soft:#212A29;
-  --tape:#7B9BF0; --tape-ink:#0D1424; --tape-soft:#1E2945;
-  --ok:#6CC08F; --ok-soft:#173326; --warn:#E0A94D; --warn-soft:#3A2C14; --bad:#EF7B6E; color-scheme:dark}
+  --paper:#16120F; --card:#201A16; --ink:#EFE8DF; --muted:#A89C8F; --line:#3A302A; --soft:#2A231E;
+  --tape:#C2B98A; --tape-ink:#1E1A10; --tape-soft:#3A3524; --oak:#C4A07C;
+  --ok:#9DB98A; --ok-soft:#24301E; --warn:#D9A866; --warn-soft:#3A2C18; --bad:#E58A72; color-scheme:dark}
 *{box-sizing:border-box}
 html,body{background:var(--paper);color:var(--ink)}
 body{font-family:var(--f-body);font-size:15px;line-height:1.5}
