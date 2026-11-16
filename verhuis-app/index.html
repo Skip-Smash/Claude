@@ -7,7 +7,7 @@
 :root{
   /* Layout: donker-eerst zoals VibeMove; kaarten r=20 met haarlijn, serif koppen met cursieve nadruk, zwevende iconenbalk onderin.
      Kleuren uit de Pinterest-verzameling 'woonkamer': espresso, olijf, eiken, linnen; terracotta als accent. */
-  --paper:#3A342D; --card:#28241F; --card2:#322D27; --ink:#F3EEE7; --muted:#A79D90; --line:#36312B; --soft:#2C2823;
+  --paper:#A47864; --card:#2A2420; --card2:#352E29; --ink:#FBF6F1; --muted:#C9BCB0; --line:#36312B; --soft:#2C2823;
   --tape:#E0703F; --tape-ink:#1C0F08; --tape-soft:#3B261B; --olive:#5B5739; --olive-ink:#F6F1E8; --oak:#C49A6C;
   --btn:#F3EEE7; --btn-ink:#1B1814;
   --ok:#A6BE8F; --ok-soft:#26301F; --warn:#E3A85C; --warn-soft:#3A2C18; --bad:#E8846E;
@@ -259,6 +259,16 @@ input[type=text],input[type=number],input[type=date],input[type=url],select,text
 .task input[type=checkbox]{accent-color:var(--tape)}
 .toast{border-radius:999px;background:var(--ink);color:var(--paper)}
 details.fold>summary h2{font-size:24px}
+/* tekst direct op de mokka-achtergrond */
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) main>.stack>*:not(.card):not(.herocard):not(details.card) .muted,:root:not([data-theme="light"]) .sechead .seeall{color:#FBF6F1}}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) main a:not(.btn):not(.tile):not(.room):not(.seeall){color:#FBF6F1}
+ :root:not([data-theme="light"]) main .empty{background:color-mix(in srgb,var(--card) 35%,transparent);color:#F3EAE2;border-color:rgba(255,255,255,.35)}
+ :root:not([data-theme="light"]) main .btn.ghost.danger{background:var(--card);color:#F0A08A}
+ :root:not([data-theme="light"]) .card a:not(.btn){color:var(--tape)}}
+:root[data-theme="dark"] main a:not(.btn):not(.tile):not(.room):not(.seeall){color:#FBF6F1}
+:root[data-theme="dark"] main .empty{background:color-mix(in srgb,var(--card) 35%,transparent);color:#F3EAE2;border-color:rgba(255,255,255,.35)}
+:root[data-theme="dark"] main .btn.ghost.danger{background:var(--card);color:#F0A08A}
+:root[data-theme="dark"] .card a:not(.btn){color:var(--tape)}
 /* Overzicht */
 .home{gap:26px}
 .herocard{background:var(--olive);color:var(--olive-ink);border-radius:24px;padding:24px 22px 20px;display:flex;flex-direction:column;gap:12px;position:relative;overflow:hidden}
