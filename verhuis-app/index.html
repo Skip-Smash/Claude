@@ -158,6 +158,16 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:60
 .picgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
 .pic{aspect-ratio:3/2;border-radius:8px;border:1px solid var(--line);background-size:cover;background-position:center;cursor:zoom-in;position:relative;padding:0}
 .pic span{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);color:#fff;font-size:12px;padding:3px 6px;text-align:left;border-radius:0 0 8px 8px}
+details.fold>summary{list-style:none;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;padding-block:2px}
+details.fold>summary::-webkit-details-marker{display:none}
+details.fold>summary h2{flex:0 1 auto}
+details.fold>summary .chev{margin-left:auto;width:28px;height:28px;border-radius:8px;display:grid;place-items:center;color:var(--muted)}
+details.fold>summary .chev::before{content:"";width:8px;height:8px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translateY(-2px);transition:transform .15s}
+details.fold:not([open])>summary .chev::before{transform:rotate(-45deg)}
+details.fold>summary:hover .chev{background:var(--soft);color:var(--ink)}
+details.fold>.foldbody{display:flex;flex-direction:column;gap:12px;margin-top:10px}
+details.fold.card:not([open]){padding-block:12px}
+.grid>details.fold{align-self:start}
 .rgal{display:flex;gap:6px;overflow-x:auto;padding:2px 0}
 .rthumb{flex:none;width:120px;height:60px;border-radius:6px;border:1px solid var(--line);background-size:cover;background-position:center 30%;position:relative;cursor:pointer;padding:0}
 .rthumb span{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);color:#fff;font-size:11px;padding:2px 5px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:0 0 6px 6px}
@@ -328,6 +338,9 @@ function noDb(){return `<div class="card stack"><h2>Opslag niet beschikbaar</h2>
 function renderCount(){const s=settings();const k=daysTo(s.keyDate),m=daysTo(s.moveDate);
   $("#countTop").innerHTML=k>0?`sleutel over <b>${k}</b> d · verhuizen over <b>${m}</b> d`:m>0?`verhuizen over <b>${m}</b> d`:`we wonen er!`}
 
+/* ---------- inklapbare blokken ---------- */
+const fold=(key,title,meta,body,def=true,cls="")=>`<details class="fold ${cls}" data-fold="${key}" ${lsGet("fold:"+key,def)?"open":""}><summary><h2>${title}</h2>${meta!==""&&meta!=null?`<span class="tape">${meta}</span>`:""}<span class="chev" aria-hidden="true"></span></summary><div class="foldbody">${body}</div></details>`;
+document.addEventListener("toggle",e=>{const d=e.target;if(d&&d.dataset&&d.dataset.fold)lsSet("fold:"+d.dataset.fold,d.open)},true);
 /* ---------- Overzicht ---------- */
 function viewHome(){
   const s=settings();const k=daysTo(s.keyDate),m=daysTo(s.moveDate);
@@ -389,7 +402,7 @@ function viewRoom(id){
   <p class="muted">${r.style?`Stijl: <b style="color:var(--ink)">${esc(r.style)}</b>`:"Nog geen stijl gekozen"}${r.notes?` · ${esc(r.notes)}`:""}</p></div>
   <div class="row"><button class="btn" data-act="editRoom" data-id="${id}">Bewerken</button><button class="btn" data-act="exportRoom" data-id="${id}" ${downloads?"":"disabled title='Downloaden is hier niet beschikbaar'"}>Download deze kamer</button></div></div>
 
-  <section class="stack"><div class="row between"><h2>360°-foto's</h2>${canUpload?`<label class="btn sm">Foto toevoegen<input type="file" accept="image/*" hidden data-pano-room="${id}"></label>`:""}</div>
+  ${fold("r360","360°-foto's",ph.length||"",`${canUpload?`<div class="row" style="justify-content:flex-end"><label class="btn sm">360°-foto toevoegen<input type="file" accept="image/*" hidden data-pano-room="${id}"></label></div>`:""}
     ${ph.length?`<div class="grid g3">${ph.map(p=>`<div class="card room" data-open-pano="${p.id}"><div class="ph" style="background-image:url('${assetUrl(p.thumbId)}')"><span class="tape solid">Open in 360°</span></div><div class="b"><b>${esc(p.name||"Foto")}</b><span class="small muted">${(p.walls||[]).filter(w=>!w.exclude).length} muren · ${(p.variants||[]).length} variant${(p.variants||[]).length===1?"":"en"}${p.w?` · ${p.w}×${p.h}`:""}</span>${(p.renders||[]).length?`<div class="rgal">${(p.renders||[]).map(r=>`<button class="rthumb" data-open-render="${p.id}|${r.id}" title="${esc(r.name)}" style="background-image:url('${assetUrl(r.thumbId)}')"><span>${esc(r.name)}</span></button>`).join("")}</div>`:""}
       ${canUpload?`<div class="row" style="gap:6px;margin-top:4px"><button class="btn sm" data-copy-pano="${p.id}" title="Kopieer de 360°-foto (zonder logo) om te plakken in ChatGPT of Gemini">Kopieer foto</button>${downloads?`<button class="btn sm" data-dl-pano="${p.id}">Download</button>`:""}<label class="btn sm primary">+ AI-render<input type="file" accept="image/*" hidden data-add-render="${p.id}"></label><label class="btn sm">Foto vervangen<input type="file" accept="image/*" hidden data-replace-pano="${p.id}"></label></div>`:""}</div></div>`).join("")}</div>
     ${canUpload?`<details class="card small"><summary><b>Mooie kleurbeelden maken met ChatGPT of Gemini</b> <span class="muted">(zo werkt het)</span></summary>
@@ -397,25 +410,22 @@ function viewRoom(id){
         <li>Tik bij de foto op <b>Kopieer foto</b> en plak hem in ChatGPT of Gemini (Nano Banana). Lukt kopiëren niet, gebruik dan <b>Download</b>. Het logo onderaan is er al uit.</li>
         <li>Gebruik deze opdracht en vul de kleur in: <div class="row" style="margin-top:4px;align-items:flex-start"><code id="gptprompt" style="flex:1;min-width:0;white-space:pre-wrap;background:var(--soft);padding:8px;border-radius:6px">${esc(GPT_PROMPT)}</code><button class="btn sm" data-act="copyPrompt">Kopieer</button></div></li>
         <li>Klik hier op <b>+ AI-render</b> bij de juiste foto en kies het gemaakte beeld. Je ziet het in 360°, en met <b>Voor / na</b> vergelijk je het met nu.</li>
-      </ol><p class="muted" style="margin-top:6px">Het AI-model kiest zelf de precieze tint. Lukt de 2:1-verhouding niet, vraag dan om "exact dezelfde afmetingen als de originele foto". Neem de kleur die je mooi vindt over in "Jullie kleuren" met de echte kleurcode van het merk, en check hem met een proefpotje.</p></details>`:""}`:`<div class="empty">Nog geen 360°-foto van deze kamer.</div>`}
-  </section>
+      </ol><p class="muted" style="margin-top:6px">Het AI-model kiest zelf de precieze tint. Lukt de 2:1-verhouding niet, vraag dan om "exact dezelfde afmetingen als de originele foto". Neem de kleur die je mooi vindt over in "Jullie kleuren" met de echte kleurcode van het merk, en check hem met een proefpotje.</p></details>`:""}`:`<div class="empty">Nog geen 360°-foto van deze kamer.</div>`}`,true)}
 
-  <section class="card stack"><h2>Kleuren per muur</h2>
-   ${walls.length?`<div class="scroll"><table class="tbl"><tr><th>Muur</th><th>Kleur</th><th>Merk & code</th><th class="r">m²</th></tr>${walls.map(x=>`<tr><td>${esc(x.w.name)}<div class="small muted">${esc(x.p.name)} · ${esc(activeVar(x.p).name)}</div></td><td>${x.paint?`<span class="row" style="gap:6px"><span class="dot" style="background:${esc(x.paint.hex)}"></span>${esc(x.paint.name)}</span>`:`<span class="muted">Origineel</span>`}</td><td class="mono small">${x.paint?esc([x.paint.brand,x.paint.code,x.paint.sheen].filter(Boolean).join(" · ")):""}</td><td class="r mono">${num(x.w.m2)||""}</td></tr>`).join("")}</table></div>`:`<p class="muted">Open een 360°-foto en teken de muren om ze een kleur te geven.</p>`}
-  </section>
+  ${fold("rkleur","Kleuren per muur",walls.filter(x=>x.paint).length?walls.filter(x=>x.paint).length+" gekozen":"",`
+   ${walls.length?`<div class="scroll"><table class="tbl"><tr><th>Muur</th><th>Kleur</th><th>Merk & code</th><th class="r">m²</th></tr>${walls.map(x=>`<tr><td>${esc(x.w.name)}<div class="small muted">${esc(x.p.name)} · ${esc(activeVar(x.p).name)}</div></td><td>${x.paint?`<span class="row" style="gap:6px"><span class="dot" style="background:${esc(x.paint.hex)}"></span>${esc(x.paint.name)}</span>`:`<span class="muted">Origineel</span>`}</td><td class="mono small">${x.paint?esc([x.paint.brand,x.paint.code,x.paint.sheen].filter(Boolean).join(" · ")):""}</td><td class="r mono">${num(x.w.m2)||""}</td></tr>`).join("")}</table></div>`:`<p class="muted">Open een 360°-foto en tik op een muur om hem een kleur te geven.</p>`}`,false)}
 
   ${(()=>{const pics=S.pics.filter(x=>x.roomId===id).sort((a,b)=>(a.order??a.createdAt??0)-(b.order??b.createdAt??0));
-    return `<section class="stack"><div class="row between"><h2>Foto's</h2>${canUpload?`<label class="btn sm">Foto's toevoegen<input type="file" accept="image/*" multiple hidden data-pic-room="${id}"></label>`:""}</div>
-    ${pics.length?`<div class="picgrid">${pics.map((x,i)=>`<button class="pic" data-pic="${x.id}" style="background-image:url('${assetUrl(x.thumbId||x.assetId)}')" aria-label="${esc(x.caption||"Foto "+(i+1))}">${x.caption?`<span>${esc(x.caption)}</span>`:""}</button>`).join("")}</div>`:`<div class="empty">Nog geen gewone foto's van ${esc(r.name)}.</div>`}</section>`})()}
-  <section class="stack"><div class="row between"><h2>Moodboard</h2><div class="row">${canUpload?`<label class="btn sm">Afbeeldingen<input type="file" accept="image/*" multiple hidden data-mood-img="${id}"></label>`:""}<button class="btn sm" data-act="moodLink" data-id="${id}">Pinterest / link</button><button class="btn sm" data-act="moodSwatch" data-id="${id}">Kleurstaal</button><button class="btn sm" data-act="moodNote" data-id="${id}">Notitie</button></div></div>
-   ${mood.length?`<div class="mood">${mood.map(moodItem).join("")}</div>`:`<div class="empty">Zet hier Pinterest-links, screenshots, kleurstalen en notities voor ${esc(r.name)}. Tik op een afbeelding om er een kleur uit te pakken.</div>`}
-  </section>
+    return fold("rfoto","Foto's",pics.length||"",`${canUpload?`<div class="row" style="justify-content:flex-end"><label class="btn sm">Foto's toevoegen<input type="file" accept="image/*" multiple hidden data-pic-room="${id}"></label></div>`:""}
+    ${pics.length?`<div class="picgrid">${pics.map((x,i)=>`<button class="pic" data-pic="${x.id}" style="background-image:url('${assetUrl(x.thumbId||x.assetId)}')" aria-label="${esc(x.caption||"Foto "+(i+1))}">${x.caption?`<span>${esc(x.caption)}</span>`:""}</button>`).join("")}</div>`:`<div class="empty">Nog geen gewone foto's van ${esc(r.name)}.</div>`}`,false)})()}
+  ${fold("rmood","Moodboard",mood.length||"",`<div class="row" style="justify-content:flex-end">${canUpload?`<label class="btn sm">Afbeeldingen<input type="file" accept="image/*" multiple hidden data-mood-img="${id}"></label>`:""}<button class="btn sm" data-act="moodLink" data-id="${id}">Pinterest / link</button><button class="btn sm" data-act="moodSwatch" data-id="${id}">Kleurstaal</button><button class="btn sm" data-act="moodNote" data-id="${id}">Notitie</button></div>
+   ${mood.length?`<div class="mood">${mood.map(moodItem).join("")}</div>`:`<div class="empty">Zet hier Pinterest-links, screenshots, kleurstalen en notities voor ${esc(r.name)}. Tik op een afbeelding om er een kleur uit te pakken.</div>`}`,true)}
 
   <div class="grid g2">
-   <section class="card"><h2>Taken</h2><div style="margin-top:6px">${tasks.map(taskRow).join("")||`<p class="muted small">Nog geen taken voor deze kamer.</p>`}</div>
-    <form class="addline" data-addtask-room="${id}"><input type="text" id="rt-${id}" placeholder="Nieuwe taak voor ${esc(r.name)}…"><button class="btn">Toevoegen</button></form></section>
-   <section class="card"><div class="row between"><h2>Bestellijst</h2><button class="btn sm" data-act="newItem" data-room="${id}">Item</button></div>
-    ${items.length?itemTable(items,false):`<p class="muted small" style="margin-top:6px">Meubels, lampen, gordijnen: alles wat voor deze kamer gekocht moet worden.</p>`}</section>
+   ${fold("rtaken","Taken",tasks.length?`${tasks.filter(t=>t.done).length}/${tasks.length}`:"",`<div>${tasks.map(taskRow).join("")||`<p class="muted small">Nog geen taken voor deze kamer.</p>`}</div>
+    <form class="addline" data-addtask-room="${id}"><input type="text" id="rt-${id}" placeholder="Nieuwe taak voor ${esc(r.name)}…"><button class="btn">Toevoegen</button></form>`,true,"card")}
+   ${fold("rbestel","Bestellijst",items.length?eur(items.reduce((a,i)=>a+num(i.qty||1)*num(i.price),0)):"",`<div class="row" style="justify-content:flex-end"><button class="btn sm" data-act="newItem" data-room="${id}">Item toevoegen</button></div>
+    ${items.length?itemTable(items,false):`<p class="muted small" style="margin-top:6px">Meubels, lampen, gordijnen: alles wat voor deze kamer gekocht moet worden.</p>`}`,true,"card")}
   </div>
   <div><button class="btn ghost danger" data-act="delRoom" data-id="${id}">Kamer verwijderen</button></div>
   </div>`;
@@ -460,9 +470,8 @@ function viewPlanning(){
   return `<div class="stack"><div class="row between"><div><h1>Planning</h1><p class="muted">Wat moet er geregeld worden, en wanneer. Vink af wat klaar is.</p></div><button class="btn primary" data-act="newTask">Nieuwe taak</button></div>
   <div class="chips"><button class="chip ${planFilter==="alles"?"on":""}" data-pf="alles">Alles</button><button class="chip ${planFilter==="open"?"on":""}" data-pf="open">Alleen open</button>${rooms.map(r=>`<button class="chip ${planFilter===r.id?"on":""}" data-pf="${r.id}">${esc(r.name)}</button>`).join("")}</div>
   <div class="grid g2">${PHASES.map(p=>{const ts=S.tasks.filter(t=>(t.phase||"voor")===p.id);const sh=ts.filter(vis).sort(taskSort);const d=ts.filter(t=>t.done).length;
-    return `<section class="card phase"><div class="row between"><div><h2>${esc(p.name)}</h2><div class="small muted">${esc(p.sub)}</div></div><span class="tape ${d===ts.length&&ts.length?"ok":""} num">${d}/${ts.length}</span></div>
-    <div>${sh.map(taskRow).join("")||`<p class="muted small">Niets in deze fase${planFilter!=="alles"?" (met dit filter)":""}.</p>`}</div>
-    <form class="addline" data-addtask-phase="${p.id}"><input type="text" id="pt-${p.id}" placeholder="Snel toevoegen…"><button class="btn">+</button></form></section>`}).join("")}</div></div>`;
+    return fold("ph-"+p.id,`${esc(p.name)} <span class="small muted" style="font-family:var(--f-body);font-weight:400">${esc(p.sub)}</span>`,`${d}/${ts.length}`,`<div>${sh.map(taskRow).join("")||`<p class="muted small">Niets in deze fase${planFilter!=="alles"?" (met dit filter)":""}.</p>`}</div>
+    <form class="addline" data-addtask-phase="${p.id}"><input type="text" id="pt-${p.id}" placeholder="Snel toevoegen…"><button class="btn">+</button></form>`,true,"card phase")}).join("")}</div></div>`;
 }
 
 /* ---------- Kosten ---------- */
@@ -492,14 +501,14 @@ function viewCosts(){
    <div class="daybox"><div class="eyebrow">Uitgegeven</div><div class="big num" style="font-size:32px">${eur(c.spent)}</div><div class="small muted">besteld, binnen of afgevinkt</div></div>
    <div class="daybox"><div class="eyebrow">Nog te regelen</div><div class="big num" style="font-size:32px">${toOrder.length+openTasks}</div><div class="small muted">${toOrder.length} te bestellen · ${openTasks} open taken</div></div>
   </div>
-  <section class="card stack"><h2>Per categorie</h2>${Object.keys(c.cats).length?Object.entries(c.cats).sort((a,b)=>b[1].pl-a[1].pl).map(([k,v])=>`<div><div class="row between small"><b>${esc(k)}</b><span class="mono">${eur(v.sp)} / ${eur(v.pl)}</span></div><div class="bar" style="background:var(--soft)"><i style="width:${v.pl/maxCat*100}%;background:linear-gradient(90deg,var(--ok) ${v.pl?v.sp/v.pl*100:0}%,var(--tape) 0)"></i></div></div>`).join(""):`<p class="muted">Nog geen bedragen. Voeg items toe of vul bij verfkleuren de m² en prijs in.</p>`}
-   <div class="small muted"><span class="dot" style="background:var(--ok);width:10px;height:10px"></span> uitgegeven <span class="dot" style="background:var(--tape);width:10px;height:10px;margin-left:10px"></span> nog te besteden</div></section>
-  <section class="card stack"><div class="row between"><h2>Te bestellen</h2><span class="tape warn">${toOrder.length}</span></div>${toOrder.length?itemTable(toOrder):`<p class="muted small">Niets meer te bestellen.</p>`}</section>
-  <section class="card stack"><h2>Verf-boodschappenlijst</h2>
+  ${fold("k-cat","Per categorie","",`${Object.keys(c.cats).length?Object.entries(c.cats).sort((a,b)=>b[1].pl-a[1].pl).map(([k,v])=>`<div><div class="row between small"><b>${esc(k)}</b><span class="mono">${eur(v.sp)} / ${eur(v.pl)}</span></div><div class="bar" style="background:var(--soft)"><i style="width:${v.pl/maxCat*100}%;background:linear-gradient(90deg,var(--ok) ${v.pl?v.sp/v.pl*100:0}%,var(--tape) 0)"></i></div></div>`).join(""):`<p class="muted">Nog geen bedragen. Voeg items toe of vul bij verfkleuren de m² en prijs in.</p>`}
+   <div class="small muted"><span class="dot" style="background:var(--ok);width:10px;height:10px"></span> uitgegeven <span class="dot" style="background:var(--tape);width:10px;height:10px;margin-left:10px"></span> nog te besteden</div>`,true,"card")}
+  ${fold("k-order","Te bestellen",toOrder.length,toOrder.length?itemTable(toOrder):`<p class="muted small">Niets meer te bestellen.</p>`,true,"card")}
+  ${fold("k-verf","Verf-boodschappenlijst",S.paints.length||"",`
    ${S.paints.length?`<div class="scroll"><table class="tbl"><tr><th>Kleur</th><th>Merk & code</th><th class="r">m²</th><th class="r">Liter</th><th class="r">Kosten</th><th>Gekocht</th></tr>${S.paints.map(p=>{const k=paintCalc(p);const used=paintUse(p.id);return `<tr><td><span class="row" style="gap:6px;flex-wrap:nowrap"><span class="dot" style="background:${esc(p.hex)}"></span><a href="#" data-edit-paint="${p.id}">${esc(p.name||p.hex)}</a></span><div class="small muted">${used.length?esc(used.join(", ")):"nog op geen muur"}</div></td><td class="mono small">${esc([p.brand,p.code,p.sheen].filter(Boolean).join(" · "))}</td><td class="r mono">${num(p.m2)||"–"}</td><td class="r mono">${k.liters?k.liters.toFixed(1):"–"}</td><td class="r mono">${k.cost?eur(k.cost):"–"}</td><td><input type="checkbox" data-paint-bought="${p.id}" ${p.bought?"checked":""} aria-label="Gekocht" style="width:20px;height:20px;accent-color:var(--ok)"></td></tr>`}).join("")}</table></div><p class="small muted">Liters = m² × lagen ÷ dekking (standaard 2 lagen, 9 m² per liter). Prijs per liter staat bij de kleur.</p>`:`<p class="muted">Nog geen kleuren. Die maak je in de 360°-viewer of bij een moodboard.</p>`}
-   <div><button class="btn sm" data-act="newPaint">Kleur toevoegen</button></div></section>
-  ${ordered.length?`<section class="card stack"><h2>Besteld & binnen</h2>${itemTable(ordered)}</section>`:""}
-  ${ideas.length?`<section class="card stack"><h2>Ideeën (nog niet begroot als keuze)</h2>${itemTable(ideas)}</section>`:""}
+   <div><button class="btn sm" data-act="newPaint">Kleur toevoegen</button></div>`,true,"card")}
+  ${ordered.length?fold("k-done","Besteld & binnen",ordered.length,itemTable(ordered),false,"card"):""}
+  ${ideas.length?fold("k-idee","Ideeën",ideas.length,itemTable(ideas),false,"card"):""}
   </div>`;
 }
 function paintUse(pid){const out=[];S.photos.forEach(p=>{const v=activeVar(p);(p.walls||[]).forEach(w=>{if((v.colors||{})[w.id]===pid)out.push(roomName(p.roomId)+": "+w.name)})});return out}
