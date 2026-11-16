@@ -287,7 +287,7 @@ details.fold>summary h2{font-size:24px}
 .lic{flex:none;width:44px;height:44px;border-radius:12px;background:var(--olive);color:var(--olive-ink);display:grid;place-items:center;font-size:18px}
 .lt{flex:1;min-width:0;cursor:pointer}
 .ld{font-size:12px;color:var(--muted)}
-.ln{font-family:var(--f-display);font-style:italic;font-size:19px;line-height:1.2}
+.ln{font-family:var(--f-body);font-weight:600;font-size:16px;line-height:1.3}
 .lr{font-size:12px;color:var(--muted)}
 .pillbtn{flex:none;border:1px solid var(--line);background:var(--card2);color:var(--ink);border-radius:999px;padding:6px 14px;font-weight:600;cursor:pointer}
 .pillbtn:hover{background:var(--tape);border-color:var(--tape);color:var(--tape-ink)}
@@ -305,7 +305,7 @@ details.fold>summary h2{font-size:24px}
 <header class="top">
   <div class="wrap">
     <div class="topbar">
-      <div class="brand"><span class="key" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3 20 3m-3 3 3 3m-6-0 2 2"/></svg></span><span>Ons <em>nieuwe</em> huis</span></div>
+      <div class="brand"><span class="key" aria-hidden="true"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5h-5v5H5a1 1 0 0 1-1-1z"/></svg></span><span>Ons <em>nieuwe</em> huis</span></div>
       <div class="count" id="countTop"></div>
     </div>
     <nav class="tabs" id="tabs">
@@ -436,7 +436,7 @@ function doRender(){
 }
 function noDb(){return `<div class="card stack"><h2>Opslag niet beschikbaar</h2><p class="muted">Deze app bewaart alles in een gedeelde opslag. Die is in deze weergave niet bereikbaar. Open de app ingelogd op claude.ai, of vraag de eigenaar om je toegang als Editor te geven.</p></div>`}
 function renderCount(){const s=settings();const k=daysTo(s.keyDate),m=daysTo(s.moveDate);
-  $("#countTop").innerHTML=k>0?`🔑 <b>${k}</b> d<span class="lg"> · verhuizen over <b>${m}</b> d</span>`:m>0?`verhuizen over <b>${m}</b> d`:`we wonen er!`}
+  $("#countTop").innerHTML=k>0?`sleutel over <b>${k}</b> d<span class="lg"> · verhuizen over <b>${m}</b> d</span>`:m>0?`verhuizen over <b>${m}</b> d`:`we wonen er!`}
 
 /* ---------- inklapbare blokken ---------- */
 const fold=(key,title,meta,body,def=true,cls="")=>`<details class="fold ${cls}" data-fold="${key}" ${lsGet("fold:"+key,def)?"open":""}><summary><h2>${title}</h2>${meta!==""&&meta!=null?`<span class="tape">${meta}</span>`:""}<span class="chev" aria-hidden="true"></span></summary><div class="foldbody">${body}</div></details>`;
