@@ -93,7 +93,7 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:60
 .addline{display:flex;gap:8px;margin-top:6px}
 /* rooms */
 .room{padding:0;overflow:hidden;cursor:pointer;display:flex;flex-direction:column}
-.room .ph{aspect-ratio:2/1;background:var(--soft);background-size:cover;background-position:center;position:relative}
+.room .ph{aspect-ratio:2/1;background:var(--soft);background-size:125% auto;background-position:center 18%;position:relative}
 .room .ph .tape{position:absolute;left:10px;top:10px}
 .room .b{padding:12px 14px;display:flex;flex-direction:column;gap:4px}
 .swatches{display:flex;gap:4px;flex-wrap:wrap}
@@ -359,7 +359,7 @@ function viewRoom(id){
   <div class="row"><button class="btn" data-act="editRoom" data-id="${id}">Bewerken</button><button class="btn" data-act="exportRoom" data-id="${id}" ${downloads?"":"disabled title='Downloaden is hier niet beschikbaar'"}>Download deze kamer</button></div></div>
 
   <section class="stack"><div class="row between"><h2>360°-foto's</h2>${canUpload?`<label class="btn sm">Foto toevoegen<input type="file" accept="image/*" hidden data-pano-room="${id}"></label>`:""}</div>
-    ${ph.length?`<div class="grid g3">${ph.map(p=>`<div class="card room" data-open-pano="${p.id}"><div class="ph" style="background-image:url('${assetUrl(p.thumbId)}')"><span class="tape solid">Open in 360°</span></div><div class="b"><b>${esc(p.name||"Foto")}</b><span class="small muted">${(p.walls||[]).filter(w=>!w.exclude).length} muren · ${(p.variants||[]).length} variant${(p.variants||[]).length===1?"":"en"}</span></div></div>`).join("")}</div>`:`<div class="empty">Nog geen 360°-foto van deze kamer.</div>`}
+    ${ph.length?`<div class="grid g3">${ph.map(p=>`<div class="card room" data-open-pano="${p.id}"><div class="ph" style="background-image:url('${assetUrl(p.thumbId)}')"><span class="tape solid">Open in 360°</span></div><div class="b"><b>${esc(p.name||"Foto")}</b><span class="small muted">${(p.walls||[]).filter(w=>!w.exclude).length} muren · ${(p.variants||[]).length} variant${(p.variants||[]).length===1?"":"en"}${p.w?` · ${p.w}×${p.h}`:""}</span>${canUpload?`<label class="btn sm" style="align-self:flex-start;margin-top:4px">Foto vervangen (muren blijven)<input type="file" accept="image/*" hidden data-replace-pano="${p.id}"></label>`:""}</div></div>`).join("")}</div>`:`<div class="empty">Nog geen 360°-foto van deze kamer.</div>`}
   </section>
 
   <section class="card stack"><h2>Kleuren per muur</h2>
@@ -525,15 +525,17 @@ async function loadBitmap(file,w,h){
 }
 async function natSize(file){try{const b=await createImageBitmap(file);const s=[b.width,b.height];b.close&&b.close();return s}catch(e){const url=URL.createObjectURL(file);const img=new Image();img.src=url;await img.decode();URL.revokeObjectURL(url);return[img.naturalWidth,img.naturalHeight]}}
 async function toJpeg(src,w,h,q=.88){const c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(src,0,0,w,h);return await new Promise(r=>c.toBlob(r,"image/jpeg",q))}
-async function uploadPano(file,roomId){
+async function processPano(file){
   const [nw,nh]=await natSize(file);
   if(Math.abs(nw/nh-2)>.08)toast(`Let op: ${file.name} is geen 2:1-panorama (${nw}×${nh}). Hij wordt toch ingeladen.`,4000);
   const W=Math.min(4096,nw-nw%2),H=W/2;
   const bmp=await loadBitmap(file,W,H);
   const full=await toJpeg(bmp,W,H,.9),thumb=await toJpeg(bmp,1024,512,.82);bmp.close&&bmp.close();
   const a=await assets.upload(full),t=await assets.upload(thumb);
-  const name=file.name.replace(/\.[^.]+$/,"");
-  return await add("photos",{roomId,name,assetId:a.id,thumbId:t.id,w:W,h:H,walls:[],variants:[{id:"v1",name:"Variant A",colors:{}}],activeVariant:"v1"});
+  return{assetId:a.id,thumbId:t.id,w:W,h:H};
+}
+async function uploadPano(file,roomId){const r=await processPano(file);const name=file.name.replace(/\.[^.]+$/,"");
+  return await add("photos",{roomId,name,...r,walls:[],variants:[{id:"v1",name:"Variant A",colors:{}}],activeVariant:"v1",nadir:0});
 }
 async function uploadImage(file,maxW=1800){const [nw,nh]=await natSize(file);const s=Math.min(1,maxW/nw);const w=Math.round(nw*s),h=Math.round(nh*s);const bmp=await loadBitmap(file,w,h);const b=await toJpeg(bmp,w,h,.86);bmp.close&&bmp.close();return await assets.upload(b)}
 async function withBusy(msg,fn){const t=document.createElement("div");t.className="toast";t.textContent=msg;document.body.appendChild(t);try{return await fn(t)}catch(e){console.error(e);toast(e&&e.code==="too_large"?"Bestand is te groot (max 20 MB).":"Uploaden lukte niet: "+(e&&e.message||"onbekende fout"))}finally{t.remove()}}
@@ -541,7 +543,7 @@ async function withBusy(msg,fn){const t=document.createElement("div");t.classNam
 /* ---------- events ---------- */
 document.addEventListener("click",async e=>{
   const t=e.target.closest("[data-act],[data-toggle],[data-edit-task],[data-edit-item],[data-edit-paint],[data-edit-sh],[data-tip],[data-tc],[data-pf],[data-plan],[data-place],[data-open-pano],[data-del-mood],[data-pick]");
-  if(!t||!db)return;const d=t.dataset;
+  if(!t||!db)return;if(e.target.closest("label")&&t.dataset.openPano)return;const d=t.dataset;
   if(d.toggle!==undefined){const task=byId("tasks",d.toggle);if(task)await safe(()=>upd("tasks",task.id,{done:!task.done,doneBy:!task.done?meId:null,doneAt:!task.done?Date.now():null}));return}
   if(d.editTask){e.preventDefault();const task=byId("tasks",d.editTask);const v=await form("Taak bewerken",taskFields(),task,"Verwijderen");if(!v)return;if(v.__extra){if(await confirmBox(`“${task.title}” verwijderen?`))await safe(()=>del("tasks",task.id));return}await safe(()=>upd("tasks",task.id,v));return}
   if(d.editItem){e.preventDefault();const it=byId("items",d.editItem);const v=await form("Item bewerken",itemFields(),it,"Verwijderen");if(!v)return;if(v.__extra){if(await confirmBox(`“${it.title}” verwijderen?`))await safe(()=>del("items",it.id));return}await safe(()=>upd("items",it.id,v));return}
@@ -581,6 +583,7 @@ document.addEventListener("change",async e=>{
     await withBusy("Foto's verwerken…",async tt=>{let i=0;for(const f of files){i++;tt.textContent=`Foto ${i} van ${files.length} verwerken en uploaden…`;
       const rid_=await add("rooms",{name:f.name.replace(/\.[^.]+$/,""),style:"",color:ROOM_COLORS[(S.rooms.length+i-1)%ROOM_COLORS.length],order:S.rooms.length+i});await uploadPano(f,rid_)}
       toast(`${files.length} foto${files.length>1?"'s":""} ingeladen`)});return}
+  if(el.dataset.replacePano&&el.files.length){const f=el.files[0];el.value="";await withBusy("Nieuwe versie verwerken en uploaden…",async()=>{const r=await processPano(f);await upd("photos",el.dataset.replacePano,r);toast("Foto vervangen. De muren staan er nog.")});return}
   if(el.dataset.panoRoom&&el.files.length){const f=el.files[0];el.value="";await withBusy("Foto verwerken en uploaden…",()=>uploadPano(f,el.dataset.panoRoom));return}
   if(el.dataset.moodImg&&el.files.length){const files=[...el.files];el.value="";await withBusy("Afbeeldingen uploaden…",async()=>{for(const f of files){const a=await uploadImage(f);await add("mood",{roomId:el.dataset.moodImg,type:"image",assetId:a.id,caption:""})}});return}
   if(el.id==="planUp"&&el.files.length){const f=el.files[0];el.value="";const v=await form("Naam van deze plattegrond",[{k:"name",label:"Naam",full:true,def:S.plans.length?"Verdieping "+(S.plans.length+1):"Begane grond"}]);if(!v)return;
@@ -661,7 +664,7 @@ class Pano{
     const W=Math.min(img.naturalWidth||img.width,maxW);const H=Math.round(W/2);this.W=W;this.H=H;
     this.canvas=document.createElement("canvas");this.canvas.width=W;this.canvas.height=H;
     this.ctx=this.canvas.getContext("2d",{willReadFrequently:true});this.ctx.drawImage(img,0,0,W,H);
-    this.img=this.ctx.getImageData(0,0,W,H);this.orig=new Uint8ClampedArray(this.img.data);
+    this.img=this.ctx.getImageData(0,0,W,H);this.base=new Uint8ClampedArray(this.img.data);this.orig=new Uint8ClampedArray(this.base);this.nadir=0;
     this.label=new Uint8Array(W*H);this.lists=[];this.stats=[];this.mc=null;this.wallsKey="";
   }
   raster(pts,val){
@@ -676,6 +679,16 @@ class Pano{
     const y0=Math.max(0,Math.floor(minY)-1),y1=Math.min(H,Math.ceil(maxY)+1);if(y1<=y0)return;
     const d=ctx.getImageData(0,y0,W,y1-y0).data;const L=this.label;
     for(let y=y0,i=3;y<y1;y++){const row=y*W;for(let x=0;x<W;x++,i+=4)if(d[i]>127)L[row+x]=val}
+  }
+  setNadir(cut){
+    cut=+cut||0;if(cut===this.nadir)return false;this.nadir=cut;this.orig.set(this.base);this.wallsKey="";
+    if(!cut)return true;const W=this.W,H=this.H,o=this.orig;const y0=Math.max(8,Math.min(H-2,Math.floor(cut*H)));
+    const c=new Float32Array(W*3);for(let x=0;x<W;x++)for(let ch=0;ch<3;ch++){let a=0;for(let y=y0-9;y<y0-3;y++)a+=o[(y*W+x)*4+ch];c[x*3+ch]=a/6}
+    const blur=(src,r)=>{const out=new Float32Array(W*3);for(let ch=0;ch<3;ch++){let acc=0;for(let k=-r;k<=r;k++)acc+=src[(((k%W)+W)%W)*3+ch];for(let x=0;x<W;x++){out[x*3+ch]=acc/(2*r+1);acc+=src[((x+r+1)%W)*3+ch]-src[(((x-r)%W+W)%W)*3+ch]}}return out};
+    const c1=blur(c,Math.max(2,Math.round(W/160))),c2=blur(c1,Math.round(W/14));const g=[0,0,0];for(let x=0;x<W;x++)for(let ch=0;ch<3;ch++)g[ch]+=c[x*3+ch]/W;
+    for(let y=y0-3;y<H;y++){const t=Math.max(0,(y-y0)/(H-y0));const a=Math.min(1,t*1.6),b=t*t;const feather=y<y0?(y-y0+4)/5:1;
+      for(let x=0;x<W;x++){const i=(y*W+x)*4;for(let ch=0;ch<3;ch++){const v=(c1[x*3+ch]*(1-a)+c2[x*3+ch]*a)*(1-b)+g[ch]*b;o[i+ch]=o[i+ch]*(1-feather)+v*feather}}}
+    return true;
   }
   setWalls(walls){
     const key=JSON.stringify(walls.map(w=>[w.pts,!!w.exclude]));if(key===this.wallsKey)return;this.wallsKey=key;
@@ -771,6 +784,7 @@ function drawOverlay(){
 function refreshViewer(force){
   if(!V||!V.pano)return;const p=byId("photos",V.id);if(!p){closeViewer();toast("Deze foto is verwijderd");return}
   const v=activeVar(p);const walls=p.walls||[];
+  if(V.pano.setNadir(p.nadir||0))V.lastColorsKey="";
   V.pano.setWalls(walls);
   const cols=colorsFor(p,v);const key=JSON.stringify([V.pano.wallsKey,cols,V.smart,V.showOrig]);
   if(force||key!==V.lastColorsKey){V.lastColorsKey=key;if(V.showOrig)V.pano.original();else V.pano.compose(cols,V.smart);V.tex.needsUpdate=true;V.dirty=true}
@@ -779,6 +793,10 @@ function refreshViewer(force){
   $("#vvarnew",V.el).onclick=async()=>{const vs=p.variants||[];const name="Variant "+String.fromCharCode(65+vs.length);const nv={id:rid(),name,colors:{...(v.colors||{})}};await safe(()=>upd("photos",p.id,{variants:[...vs,nv],activeVariant:nv.id}));toast(`${name} gemaakt (kopie van ${v.name})`)};
   drawOverlay();renderSheet();
 }
+function refreshCompose(){const p=byId("photos",V.id);const v=activeVar(p);V.pano.setWalls(p.walls||[]);if(V.showOrig)V.pano.original();else V.pano.compose(colorsFor(p,v),V.smart);V.tex.needsUpdate=true;V.dirty=true}
+function guessNadir(P){/* zoek de bovenrand van een egale band onderin (logo/patch) */const W=P.W,H=P.H,o=P.base;let best=0,by=0;
+  for(let y=Math.floor(H*.70);y<H*.97;y++){let d=0;for(let x=0;x<W;x+=4){const i=(y*W+x)*4,j=((y-2)*W+x)*4;d+=Math.abs(o[i]-o[j])+Math.abs(o[i+1]-o[j+1])+Math.abs(o[i+2]-o[j+2])}if(d>best){best=d;by=y}}
+  return best/(W/4)>60?+((by-4)/H).toFixed(3):0}
 function renderSheet(){
   const p=byId("photos",V.id);if(!p)return;const sh=$("#vsheet",V.el);const v=activeVar(p);const walls=p.walls||[];
   const hint=$(".hint",V.el);if(hint)hint.remove();
@@ -813,12 +831,16 @@ function renderSheet(){
   :walls.length?`<p class="small muted">Tik op een muur in de foto of op een naam hierboven om hem te kiezen.</p>`:""}
   <div class="row between small"><label class="row" style="gap:6px"><input type="checkbox" id="vsmart" ${V.smart?"checked":""}> Slim maskeren <span class="muted">(stopcontacten, lijsten en schaduwen behouden)</span></label>
    <label class="row" style="gap:6px"><input type="checkbox" id="vlines" ${lsGet("showLines",false)?"checked":""}> Lijnen tonen</label>
-   <button class="btn sm" id="vorig">Houd vast: origineel</button></div>`;
+   <button class="btn sm" id="vorig">Houd vast: origineel</button></div>
+  <div class="row small"><label class="row" style="gap:6px"><input type="checkbox" id="vnadir" ${p.nadir?"checked":""}> Onderkant opvullen <span class="muted">(logo of statief weg)</span></label>
+   ${p.nadir?`<input type="range" id="vnadirr" min="0.70" max="0.97" step="0.002" value="${p.nadir}" style="flex:1;min-width:140px" aria-label="Vanaf hoe ver opvullen"><span class="muted">schuif tot het logo net weg is</span>`:""}</div>`;
   sh.querySelectorAll("[data-w]").forEach(b=>b.onclick=()=>{V.sel=b.dataset.w;drawOverlay();renderSheet()});
   $("#vadd",sh).onclick=()=>{V.mode="draw";V.draftExclude=false;V.draft=[];V.sel=null;drawOverlay();renderSheet()};
   $("#vexcl",sh).onclick=()=>{V.mode="draw";V.draftExclude=true;V.draft=[];V.sel=null;drawOverlay();renderSheet()};
   $("#vsmart",sh).onchange=e=>{V.smart=e.target.checked;lsSet("smart",V.smart);refreshViewer()};
   $("#vlines",sh).onchange=e=>{lsSet("showLines",e.target.checked);drawOverlay()};
+  $("#vnadir",sh).onchange=e=>safe(()=>upd("photos",p.id,{nadir:e.target.checked?(guessNadir(V.pano)||0.84):0}));
+  const nr=$("#vnadirr",sh);if(nr){nr.oninput=()=>{V.pano.setNadir(+nr.value);V.lastColorsKey="";refreshCompose()};nr.onchange=()=>safe(()=>upd("photos",p.id,{nadir:+nr.value}))}
   const ob=$("#vorig",sh);const on=()=>{V.showOrig=true;refreshViewer()},off=()=>{if(V.showOrig){V.showOrig=false;refreshViewer()}};
   ob.addEventListener("pointerdown",on);ob.addEventListener("pointerup",off);ob.addEventListener("pointerleave",off);ob.addEventListener("pointercancel",off);
   if(sw){
@@ -837,7 +859,7 @@ async function exportRoom(roomId){
   const r=byId("rooms",roomId);
   await withBusy("Kamer-export maken…",async tt=>{
     const ph=S.photos.filter(p=>p.roomId===roomId);const panos=[];
-    for(const p of ph){tt.textContent=`Foto “${p.name}” renderen…`;const img=await loadImg(assetUrl(p.assetId));const pano=new Pano(img,4096);pano.setWalls(p.walls||[]);const v=activeVar(p);pano.compose(colorsFor(p,v),lsGet("smart",true));
+    for(const p of ph){tt.textContent=`Foto “${p.name}” renderen…`;const img=await loadImg(assetUrl(p.assetId));const pano=new Pano(img,4096);pano.setNadir(p.nadir||0);pano.setWalls(p.walls||[]);const v=activeVar(p);pano.compose(colorsFor(p,v),lsGet("smart",true));
       const c=document.createElement("canvas");c.width=Math.min(4096,pano.W);c.height=c.width/2;c.getContext("2d").drawImage(pano.canvas,0,0,c.width,c.height);
       panos.push({name:p.name,variant:v.name,src:c.toDataURL("image/jpeg",.85),walls:(p.walls||[]).filter(w=>!w.exclude).map(w=>({name:w.name,m2:w.m2,paint:byId("paints",(v.colors||{})[w.id])}))})}
     tt.textContent="Moodboard verzamelen…";const mood=[];
