@@ -391,10 +391,10 @@ function viewRoom(id){
 
   <section class="stack"><div class="row between"><h2>360°-foto's</h2>${canUpload?`<label class="btn sm">Foto toevoegen<input type="file" accept="image/*" hidden data-pano-room="${id}"></label>`:""}</div>
     ${ph.length?`<div class="grid g3">${ph.map(p=>`<div class="card room" data-open-pano="${p.id}"><div class="ph" style="background-image:url('${assetUrl(p.thumbId)}')"><span class="tape solid">Open in 360°</span></div><div class="b"><b>${esc(p.name||"Foto")}</b><span class="small muted">${(p.walls||[]).filter(w=>!w.exclude).length} muren · ${(p.variants||[]).length} variant${(p.variants||[]).length===1?"":"en"}${p.w?` · ${p.w}×${p.h}`:""}</span>${(p.renders||[]).length?`<div class="rgal">${(p.renders||[]).map(r=>`<button class="rthumb" data-open-render="${p.id}|${r.id}" title="${esc(r.name)}" style="background-image:url('${assetUrl(r.thumbId)}')"><span>${esc(r.name)}</span></button>`).join("")}</div>`:""}
-      ${canUpload?`<div class="row" style="gap:6px;margin-top:4px"><label class="btn sm primary">+ AI-render<input type="file" accept="image/*" hidden data-add-render="${p.id}"></label><label class="btn sm">Foto vervangen<input type="file" accept="image/*" hidden data-replace-pano="${p.id}"></label></div>`:""}</div></div>`).join("")}</div>
+      ${canUpload?`<div class="row" style="gap:6px;margin-top:4px"><button class="btn sm" data-copy-pano="${p.id}" title="Kopieer de 360°-foto (zonder logo) om te plakken in ChatGPT of Gemini">Kopieer foto</button>${downloads?`<button class="btn sm" data-dl-pano="${p.id}">Download</button>`:""}<label class="btn sm primary">+ AI-render<input type="file" accept="image/*" hidden data-add-render="${p.id}"></label><label class="btn sm">Foto vervangen<input type="file" accept="image/*" hidden data-replace-pano="${p.id}"></label></div>`:""}</div></div>`).join("")}</div>
     ${canUpload?`<details class="card small"><summary><b>Mooie kleurbeelden maken met ChatGPT of Gemini</b> <span class="muted">(zo werkt het)</span></summary>
       <ol style="margin:8px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:6px">
-        <li>Zet je originele 360°-foto in ChatGPT of Gemini (Nano Banana).</li>
+        <li>Tik bij de foto op <b>Kopieer foto</b> en plak hem in ChatGPT of Gemini (Nano Banana). Lukt kopiëren niet, gebruik dan <b>Download</b>. Het logo onderaan is er al uit.</li>
         <li>Gebruik deze opdracht en vul de kleur in: <div class="row" style="margin-top:4px;align-items:flex-start"><code id="gptprompt" style="flex:1;min-width:0;white-space:pre-wrap;background:var(--soft);padding:8px;border-radius:6px">${esc(GPT_PROMPT)}</code><button class="btn sm" data-act="copyPrompt">Kopieer</button></div></li>
         <li>Klik hier op <b>+ AI-render</b> bij de juiste foto en kies het gemaakte beeld. Je ziet het in 360°, en met <b>Voor / na</b> vergelijk je het met nu.</li>
       </ol><p class="muted" style="margin-top:6px">Het AI-model kiest zelf de precieze tint. Lukt de 2:1-verhouding niet, vraag dan om "exact dezelfde afmetingen als de originele foto". Neem de kleur die je mooi vindt over in "Jullie kleuren" met de echte kleurcode van het merk, en check hem met een proefpotje.</p></details>`:""}`:`<div class="empty">Nog geen 360°-foto van deze kamer.</div>`}
@@ -595,7 +595,7 @@ async function withBusy(msg,fn){const t=document.createElement("div");t.classNam
 /* ---------- events ---------- */
 document.addEventListener("click",async e=>{
   if(e.target.closest("label")&&e.target.closest("[data-open-pano]"))return;
-  const t=e.target.closest("[data-pic],[data-open-render],[data-act],[data-toggle],[data-edit-task],[data-edit-item],[data-edit-paint],[data-edit-sh],[data-tip],[data-tc],[data-pf],[data-plan],[data-place],[data-open-pano],[data-del-mood],[data-pick]");
+  const t=e.target.closest("[data-copy-pano],[data-dl-pano],[data-pic],[data-open-render],[data-act],[data-toggle],[data-edit-task],[data-edit-item],[data-edit-paint],[data-edit-sh],[data-tip],[data-tc],[data-pf],[data-plan],[data-place],[data-open-pano],[data-del-mood],[data-pick]");
   if(!t||!db)return;if(e.target.closest("label")&&t.dataset.openPano)return;const d=t.dataset;
   if(d.toggle!==undefined){const task=byId("tasks",d.toggle);if(task)await safe(()=>upd("tasks",task.id,{done:!task.done,doneBy:!task.done?meId:null,doneAt:!task.done?Date.now():null}));return}
   if(d.editTask){e.preventDefault();const task=byId("tasks",d.editTask);const v=await form("Taak bewerken",taskFields(),task,"Verwijderen");if(!v)return;if(v.__extra){if(await confirmBox(`“${task.title}” verwijderen?`))await safe(()=>del("tasks",task.id));return}await safe(()=>upd("tasks",task.id,v));return}
@@ -612,6 +612,8 @@ document.addEventListener("click",async e=>{
   if(d.delMood){e.stopPropagation();if(await confirmBox("Van het moodboard halen?"))await safe(()=>del("mood",d.delMood));return}
   if(d.pick){openPicker(byId("mood",d.pick));return}
   if(d.pic){openPic(d.pic);return}
+  if(d.copyPano){e.stopPropagation();copyPano(d.copyPano,t);return}
+  if(d.dlPano){e.stopPropagation();dlPano(d.dlPano);return}
   const a=d.act;
   if(a==="newRoom"){const v=await form("Nieuwe kamer",[{k:"name",label:"Naam",full:true},{k:"style",label:"Stijl",ph:"bijv. Japandi, warm minimalistisch"},{k:"color",label:"Labelkleur (voor dozen)",type:"color",def:ROOM_COLORS[S.rooms.length%ROOM_COLORS.length]},{k:"notes",label:"Notities",type:"textarea",full:true}]);if(v&&v.name){const id=await safe(()=>add("rooms",{...v,order:S.rooms.length}));if(id)location.hash="#kamer-"+id}}
   if(a==="editRoom"){const r=byId("rooms",d.id);const v=await form("Kamer bewerken",[{k:"name",label:"Naam",full:true},{k:"style",label:"Stijl"},{k:"color",label:"Labelkleur",type:"color"},{k:"order",label:"Volgorde",type:"number"},{k:"notes",label:"Notities",type:"textarea",full:true}],r);if(v)await safe(()=>upd("rooms",r.id,v))}
@@ -663,6 +665,25 @@ async function pickPaintFor(roomId){
   $("#ppnew",m).onclick=async()=>{m.remove();const id=await newPaint();if(id)await safe(()=>add("mood",{roomId,type:"swatch",paintId:id}))};
 }
 
+/* ---------- 360°-foto kopiëren / downloaden (zonder logo) ---------- */
+async function panoExportBlob(photoId,type,maxW){
+  const p=byId("photos",photoId);const img=await loadImg(assetUrl(p.assetId));const P=new Pano(img,maxW||4096);P.setNadir(p.nadir||0);P.original();
+  return await new Promise(r=>P.canvas.toBlob(r,type,type==="image/jpeg"?.92:undefined));
+}
+function copyPano(photoId,btn){
+  const old=btn.textContent;btn.disabled=true;btn.textContent="Kopiëren…";
+  const done=(msg)=>{btn.disabled=false;btn.textContent=old;if(msg)toast(msg,4000)};
+  try{
+    if(!navigator.clipboard||!window.ClipboardItem)throw new Error("geen klembord");
+    const item=new ClipboardItem({"image/png":panoExportBlob(photoId,"image/png",4096)});
+    navigator.clipboard.write([item]).then(()=>done("Foto gekopieerd. Plak hem in ChatGPT of Gemini (Ctrl/Cmd+V)."),err=>{console.warn(err);done(downloads?"Kopiëren mag hier niet van je browser. Gebruik Download.":"Kopiëren mag hier niet van je browser.")});
+  }catch(err){done(downloads?"Kopiëren werkt hier niet. Gebruik Download.":"Kopiëren werkt in deze browser niet.")}
+}
+async function dlPano(photoId){
+  if(!downloads)return;const p=byId("photos",photoId);
+  await withBusy("Foto klaarmaken…",async()=>{const b=await panoExportBlob(photoId,"image/jpeg",8192);
+    try{await downloads.save({filename:`${(roomName(p.roomId)||"kamer").replace(/[^\w\- ]+/g,"")} 360.jpg`,data:b})}catch(e){if(e&&e.code!=="declined")toast("Downloaden lukte niet.")}});
+}
 /* ---------- fotogalerij ---------- */
 function openPic(id){
   const x0=byId("pics",id);if(!x0)return;const list=S.pics.filter(x=>x.roomId===x0.roomId).sort((a,b)=>(a.order??a.createdAt??0)-(b.order??b.createdAt??0));let i=list.findIndex(x=>x.id===id);
@@ -1187,8 +1208,8 @@ function renderSheet(){
     return;
   }
   const rs=p.renders||[];
-  const rbar=`<div class="row" style="gap:6px"><span class="small muted">Weergave:</span><button class="rchip ${V.renderId?"":"on"}" id="vpaint"><img src="${assetUrl(p.thumbId)}" alt="">Verf-preview</button>${rs.map(r=>`<button class="rchip ${V.renderId===r.id?"on":""}" data-rsel="${r.id}"><img src="${assetUrl(r.thumbId)}" alt="">${r.hex?`<span class="dot" style="background:${esc(r.hex)};width:10px;height:10px"></span>`:""}${esc(r.name)}</button>`).join("")}${assets?`<label class="btn sm">+ AI-render<input type="file" accept="image/*" hidden id="vaddr"></label>`:""}</div>`;
-  const bindRbar=()=>{$("#vpaint",sh).onclick=()=>{lsSet("preferRender",false);showPaint()};sh.querySelectorAll("[data-rsel]").forEach(b=>b.onclick=()=>{lsSet("preferRender",true);showRender(b.dataset.rsel)});const ar=$("#vaddr",sh);if(ar)ar.onchange=async()=>{const f=ar.files[0];ar.value="";if(f)await addRender(p.id,f)}};
+  const rbar=`<div class="row" style="gap:6px"><span class="small muted">Weergave:</span><button class="rchip ${V.renderId?"":"on"}" id="vpaint"><img src="${assetUrl(p.thumbId)}" alt="">Verf-preview</button>${rs.map(r=>`<button class="rchip ${V.renderId===r.id?"on":""}" data-rsel="${r.id}"><img src="${assetUrl(r.thumbId)}" alt="">${r.hex?`<span class="dot" style="background:${esc(r.hex)};width:10px;height:10px"></span>`:""}${esc(r.name)}</button>`).join("")}<button class="btn sm" id="vcopy" title="Kopieer de 360°-foto (zonder logo)">Kopieer foto</button>${assets?`<label class="btn sm">+ AI-render<input type="file" accept="image/*" hidden id="vaddr"></label>`:""}</div>`;
+  const bindRbar=()=>{$("#vpaint",sh).onclick=()=>{lsSet("preferRender",false);showPaint()};sh.querySelectorAll("[data-rsel]").forEach(b=>b.onclick=()=>{lsSet("preferRender",true);showRender(b.dataset.rsel)});const vc_=$("#vcopy",sh);if(vc_)vc_.onclick=()=>copyPano(p.id,vc_);const ar=$("#vaddr",sh);if(ar)ar.onchange=async()=>{const f=ar.files[0];ar.value="";if(f)await addRender(p.id,f)}};
   if(V.renderId){const r=rs.find(x=>x.id===V.renderId);
     sh.innerHTML=rbar+(r?`<div class="wallhead"><span class="bigsw" style="background:${r.hex?esc(r.hex):"#2F3A38"}"></span><div style="flex:1;min-width:0"><div class="eyebrow" style="color:#94A39F">AI-render</div><div class="wn">${esc(r.name)}</div><div class="small muted">${r.notes?esc(r.notes):"Gebruik Voor / na om te vergelijken met hoe het nu is."}</div></div>
       <div class="row" style="gap:6px">${r.hex?`<button class="btn sm" id="rtopaint">Kleur bewaren</button>`:""}<button class="btn sm" id="redit">Bewerken</button><button class="btn sm danger" id="rdel" aria-label="Render verwijderen">✕</button></div></div>
