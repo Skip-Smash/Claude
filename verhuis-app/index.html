@@ -722,14 +722,15 @@ async function loadImg(src){const img=new Image();img.decoding="async";img.src=s
 
 /* ---------- 360°: viewer ---------- */
 let V=null;
-async function openViewer(photoId){
+async function openViewer(photoId,opts={}){
   if(typeof THREE==="undefined"){toast("De 360°-viewer kon niet laden (geen verbinding met de bibliotheek).");return}
   closeViewer();
   const el=document.createElement("div");el.id="viewer";
   el.innerHTML=`<div class="vt"><button class="btn sm" id="vclose" aria-label="Sluiten">← Terug</button><h3 id="vtitle"></h3><select id="vvar" aria-label="Variant"></select><button class="btn sm" id="vvarnew" title="Nieuwe variant op basis van deze">+ Variant</button></div>
   <div class="stage" id="vstage"><div class="spin" id="vspin">360°-foto laden…</div></div><div class="vs" id="vsheet"></div>`;
   document.body.appendChild(el);document.body.style.overflow="hidden";
-  V={id:photoId,el,mode:"look",draft:[],draftExclude:false,sel:null,smart:lsGet("smart",true),lon:0,lat:0,fov:80,dirty:true,lastColorsKey:""};
+  V={id:photoId,el,mode:"look",draft:[],draftExclude:false,sel:null,smart:lsGet("smart",true),lon:0,lat:0,fov:80,dirty:true,lastColorsKey:"",linkDraft:null};
+  {const p0=byId("photos",photoId);V.lon=opts.lon??(p0&&p0.startLon)??0;V.lat=opts.lat??(p0&&p0.startLat)??0}
   $("#vclose",el).onclick=closeViewer;
   const p=byId("photos",photoId);$("#vtitle",el).textContent=`${roomName(p.roomId)} · ${p.name||""}`;
   const stage=$("#vstage",el);
@@ -742,8 +743,8 @@ async function openViewer(photoId){
   const tex=new THREE.CanvasTexture(pano.canvas);tex.minFilter=THREE.LinearFilter;tex.generateMipmaps=false;
   const geo=new THREE.SphereGeometry(500,96,64);geo.scale(-1,1,1);
   scene.add(new THREE.Mesh(geo,new THREE.MeshBasicMaterial({map:tex})));
-  const overlay=new THREE.Group();scene.add(overlay);
-  Object.assign(V,{renderer,scene,cam,pano,tex,overlay,stage});
+  const overlay=new THREE.Group();scene.add(overlay);const linkG=new THREE.Group();scene.add(linkG);
+  Object.assign(V,{renderer,scene,cam,pano,tex,overlay,linkG,stage});
   $("#vspin",el).remove();
   const resize=()=>{const w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix();V.dirty=true};
   V.resize=resize;window.addEventListener("resize",resize);resize();
@@ -768,7 +769,11 @@ function onTap(e){
   const r=V.stage.getBoundingClientRect();const ndc=new THREE.Vector2((e.clientX-r.left)/r.width*2-1,-((e.clientY-r.top)/r.height)*2+1);
   const rc=new THREE.Raycaster();rc.setFromCamera(ndc,V.cam);const d=rc.ray.direction;const [u,v]=dirToUv([d.x,d.y,d.z]);
   if(V.mode==="draw"){V.draft.push([+u.toFixed(5),+v.toFixed(5)]);drawOverlay();renderSheet();return}
-  const k=V.pano.hit(u,v);const p=byId("photos",V.id);
+  if(V.mode==="link"){V.linkDraft=[+u.toFixed(5),+v.toFixed(5)];drawOverlay();renderSheet();return}
+  const p=byId("photos",V.id);
+  const hitLink=(p.links||[]).find(l=>{const d=uvToDir(l.u,l.v);const q=new THREE.Vector3(d[0],d[1],d[2]).project(V.cam);if(q.z>1)return false;const x=(q.x+1)/2*r.width,y=(1-q.y)/2*r.height;return Math.abs(x-(e.clientX-r.left))<95&&Math.abs(y-(e.clientY-r.top))<32});
+  if(hitLink){goThrough(hitLink);return}
+  const k=V.pano.hit(u,v);
   if(k>0&&k<255&&p.walls[k-1]){V.sel=p.walls[k-1].id}else V.sel=null;drawOverlay();renderSheet();
 }
 function drawOverlay(){
@@ -779,7 +784,27 @@ function drawOverlay(){
   const showAll=V.mode==="draw"||lsGet("showLines",false);
   (p.walls||[]).forEach(w=>{if(w.id===V.sel){line(w.pts,true,0x7B9BF0);dots(w.pts,0xffffff)}else if(showAll)line(w.pts,true,w.exclude?0xE0A94D:0xffffff,.45)});
   if(V.mode==="draw"&&V.draft.length){line(V.draft,false,0xFFD84D);dots(V.draft,0xFFD84D);if(V.draft.length>2)line([V.draft[V.draft.length-1],V.draft[0]],false,0xFFD84D,.4)}
-  V.dirty=true;
+  drawLinks(p);V.dirty=true;
+}
+function linkLabel(l){const t=byId("photos",l.to);return l.label||(t?roomName(t.roomId)||t.name:"?")}
+function drawLinks(p){
+  const g=V.linkG;while(g.children.length){const c=g.children.pop();c.material.map&&c.material.map.dispose();c.material.dispose()}
+  const mk=(u,v,text,draft)=>{const c=document.createElement("canvas");c.width=512;c.height=128;const x=c.getContext("2d");
+    x.font="600 44px 'Instrument Sans', system-ui, sans-serif";const tw=Math.min(380,x.measureText(text).width);const w=tw+130,h=96,x0=(512-w)/2,y0=16;
+    x.fillStyle=draft?"rgba(255,216,77,.95)":"rgba(12,16,15,.78)";x.strokeStyle="rgba(255,255,255,.95)";x.lineWidth=5;
+    x.beginPath();x.roundRect?x.roundRect(x0,y0,w,h,48):x.rect(x0,y0,w,h);x.fill();x.stroke();
+    x.fillStyle=draft?"#111":"#fff";x.beginPath();const cx=x0+52,cy=y0+h/2;x.moveTo(cx-16,cy+12);x.lineTo(cx,cy-14);x.lineTo(cx+16,cy+12);x.lineTo(cx,cy+4);x.closePath();x.fill();
+    x.textBaseline="middle";x.fillText(text,x0+92,cy+2,380);
+    const tex=new THREE.CanvasTexture(c);tex.minFilter=THREE.LinearFilter;const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,depthTest:false,sizeAttenuation:false,transparent:true}));
+    const d=uvToDir(u,v);sp.position.set(d[0]*450,d[1]*450,d[2]*450);sp.scale.set(.42,.105,1);sp.renderOrder=10;g.add(sp)};
+  (p.links||[]).forEach(l=>mk(l.u,l.v,linkLabel(l),false));
+  if(V.mode==="link"&&V.linkDraft)mk(V.linkDraft[0],V.linkDraft[1],"Hier",true);
+}
+function goThrough(l){
+  const t=byId("photos",l.to);if(!t){toast("De foto van deze doorgang bestaat niet meer.");return}
+  const back=(t.links||[]).find(x=>x.to===V.id);let opts={};
+  if(back){opts={lon:back.u*360+180,lat:0}}
+  openViewer(t.id,opts);
 }
 function refreshViewer(force){
   if(!V||!V.pano)return;const p=byId("photos",V.id);if(!p){closeViewer();toast("Deze foto is verwijderd");return}
@@ -816,10 +841,24 @@ function renderSheet(){
     return;
   }
   V.stage.classList.remove("draw");
+  if(V.mode==="link"){
+    V.stage.classList.add("draw");const h=document.createElement("div");h.className="hint";h.textContent=V.linkDraft?"Kies hieronder waar deze doorgang naartoe gaat.":"Tik op de deur, trap of doorgang waar je naartoe wilt kunnen lopen.";V.stage.appendChild(h);
+    const others=S.photos.filter(x=>x.id!==p.id).sort((a,b)=>(byId("rooms",a.roomId)?.order??99)-(byId("rooms",b.roomId)?.order??99));
+    sh.innerHTML=`<div class="row between"><b>Doorgang maken</b><div class="row"><button class="btn sm" id="lcancel">Annuleren</button><button class="btn sm primary" id="lsave" ${V.linkDraft?"":"disabled"}>Opslaan</button></div></div>
+    ${others.length?`<div class="row"><label class="small muted" style="flex:1;min-width:200px">Gaat naar<select id="lto" style="width:100%">${others.map(x=>`<option value="${x.id}">${esc(roomName(x.roomId)||"Zonder kamer")} · ${esc(x.name||"foto")}</option>`).join("")}</select></label>
+    <label class="small muted" style="flex:1;min-width:160px">Label (optioneel)<input type="text" id="llabel" placeholder="bijv. Trap omhoog" style="background:#1E2625;border-color:#2F3A38;color:#E8EEEC"></label></div>`:`<p class="small muted">Er zijn nog geen andere 360°-foto's om naartoe te gaan.</p>`}
+    <p class="small muted">Tip: maak in de andere foto ook een doorgang terug. Dan kijk je bij aankomst automatisch de goede kant op.</p>`;
+    $("#lcancel",sh).onclick=()=>{V.mode="look";V.linkDraft=null;drawOverlay();renderSheet()};
+    $("#lsave",sh).onclick=async()=>{const to=$("#lto",sh)?.value;if(!to||!V.linkDraft)return;const l={id:rid(),u:V.linkDraft[0],v:V.linkDraft[1],to,label:($("#llabel",sh).value||"").trim()};
+      V.mode="look";V.linkDraft=null;await safe(()=>upd("photos",p.id,{links:[...(p.links||[]),l]}));toast("Doorgang opgeslagen. Tik erop om erheen te gaan.")};
+    return;
+  }
   const sw=walls.find(w=>w.id===V.sel);const curPaint=sw?(v.colors||{})[sw.id]:null;
   const roomPaintIds=new Set(roomPaints(p.roomId).map(x=>x.id));
   const pals=[...S.paints].sort((a,b)=>(roomPaintIds.has(b.id)-roomPaintIds.has(a.id))||(b.createdAt||0)-(a.createdAt||0));
-  sh.innerHTML=`<div class="row" style="gap:6px">${walls.map(w=>{const pa=byId("paints",(v.colors||{})[w.id]);return `<span class="wchip ${w.id===V.sel?"on":""}" data-w="${w.id}">${w.exclude?"⊘":`<span class="dot" style="background:${pa?esc(pa.hex):"transparent"};border-color:#5b6866"></span>`} ${esc(w.name)}</span>`}).join("")}
+  const links=p.links||[];
+  sh.innerHTML=`<div class="row small" style="gap:6px"><span class="muted">Doorgangen:</span>${links.map(l=>`<span class="wchip"><span data-go="${l.id}">→ ${esc(linkLabel(l))}</span><span data-ldel="${l.id}" title="Verwijderen" style="opacity:.6;padding-left:4px">✕</span></span>`).join("")||`<span class="muted">nog geen</span>`}<button class="btn sm" id="vlink">+ Doorgang</button><button class="btn sm" id="vstart" title="Zo kijk je als je deze foto opent">Startbeeld opslaan</button></div>
+  <div class="row" style="gap:6px">${walls.map(w=>{const pa=byId("paints",(v.colors||{})[w.id]);return `<span class="wchip ${w.id===V.sel?"on":""}" data-w="${w.id}">${w.exclude?"⊘":`<span class="dot" style="background:${pa?esc(pa.hex):"transparent"};border-color:#5b6866"></span>`} ${esc(w.name)}</span>`}).join("")}
     <button class="btn sm primary" id="vadd">+ Muur</button><button class="btn sm" id="vexcl" title="Raam, deur of radiator uitsluiten">+ Uitsparing</button></div>
   ${walls.length===0?`<p class="small muted">Nog geen muren. Tik op <b>+ Muur</b> en daarna op de hoeken van een muur. Daarna kun je die muur een kleur geven.</p>`:""}
   ${sw?(sw.exclude?`<div class="row between"><span class="small">Uitsparing <b>${esc(sw.name)}</b> wordt nooit geverfd.</span><button class="btn sm danger" id="wdel">Verwijderen</button></div>`:
@@ -835,6 +874,10 @@ function renderSheet(){
   <div class="row small"><label class="row" style="gap:6px"><input type="checkbox" id="vnadir" ${p.nadir?"checked":""}> Onderkant opvullen <span class="muted">(logo of statief weg)</span></label>
    ${p.nadir?`<input type="range" id="vnadirr" min="0.70" max="0.97" step="0.002" value="${p.nadir}" style="flex:1;min-width:140px" aria-label="Vanaf hoe ver opvullen"><span class="muted">schuif tot het logo net weg is</span>`:""}</div>`;
   sh.querySelectorAll("[data-w]").forEach(b=>b.onclick=()=>{V.sel=b.dataset.w;drawOverlay();renderSheet()});
+  $("#vlink",sh).onclick=()=>{V.mode="link";V.linkDraft=null;V.sel=null;drawOverlay();renderSheet()};
+  $("#vstart",sh).onclick=async()=>{await safe(()=>upd("photos",p.id,{startLon:+(((V.lon%360)+360)%360).toFixed(1),startLat:+V.lat.toFixed(1)}));toast("Startbeeld opgeslagen")};
+  sh.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{const l=links.find(x=>x.id===b.dataset.go);if(l)goThrough(l)});
+  sh.querySelectorAll("[data-ldel]").forEach(b=>b.onclick=async()=>{if(!await confirmBox("Deze doorgang verwijderen?"))return;await safe(()=>upd("photos",p.id,{links:links.filter(x=>x.id!==b.dataset.ldel)}))});
   $("#vadd",sh).onclick=()=>{V.mode="draw";V.draftExclude=false;V.draft=[];V.sel=null;drawOverlay();renderSheet()};
   $("#vexcl",sh).onclick=()=>{V.mode="draw";V.draftExclude=true;V.draft=[];V.sel=null;drawOverlay();renderSheet()};
   $("#vsmart",sh).onchange=e=>{V.smart=e.target.checked;lsSet("smart",V.smart);refreshViewer()};
