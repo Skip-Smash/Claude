@@ -528,9 +528,9 @@ async function toJpeg(src,w,h,q=.88){const c=document.createElement("canvas");c.
 async function processPano(file){
   const [nw,nh]=await natSize(file);
   if(Math.abs(nw/nh-2)>.08)toast(`Let op: ${file.name} is geen 2:1-panorama (${nw}×${nh}). Hij wordt toch ingeladen.`,4000);
-  const W=Math.min(4096,nw-nw%2),H=W/2;
+  const W=Math.min(8192,nw-nw%2),H=W/2;
   const bmp=await loadBitmap(file,W,H);
-  const full=await toJpeg(bmp,W,H,.9),thumb=await toJpeg(bmp,1024,512,.82);bmp.close&&bmp.close();
+  let full=await toJpeg(bmp,W,H,.9);if(full.size>19e6)full=await toJpeg(bmp,W,H,.8);const thumb=await toJpeg(bmp,1024,512,.82);bmp.close&&bmp.close();
   const a=await assets.upload(full),t=await assets.upload(thumb);
   return{assetId:a.id,thumbId:t.id,w:W,h:H};
 }
@@ -739,7 +739,8 @@ async function openViewer(photoId,opts={}){
   const scene=new THREE.Scene();const cam=new THREE.PerspectiveCamera(V.fov,1,1,1100);
   let img;try{img=await loadImg(assetUrl(p.assetId))}catch(e){$("#vspin",el).textContent="De foto kon niet geladen worden.";return}
   if(!V||V.id!==photoId){renderer.dispose();return}
-  const pano=new Pano(img,Math.min(4096,maxTex));
+  const small=(window.matchMedia&&matchMedia("(pointer:coarse)").matches)||(navigator.deviceMemory&&navigator.deviceMemory<=4);
+  const pano=new Pano(img,Math.min(small?4096:8192,maxTex));
   const tex=new THREE.CanvasTexture(pano.canvas);tex.minFilter=THREE.LinearFilter;tex.generateMipmaps=false;
   const geo=new THREE.SphereGeometry(500,96,64);geo.scale(-1,1,1);
   scene.add(new THREE.Mesh(geo,new THREE.MeshBasicMaterial({map:tex})));
