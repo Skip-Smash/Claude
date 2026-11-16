@@ -1,0 +1,875 @@
+<title>Ons Nieuwe Huis</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: sticky kop met tab-strip; kaarten alleen waar iets een los object is. Labels als stukjes schilderstape. */
+:root{
+  --paper:#EEF1EE; --card:#FFFFFF; --ink:#1C2423; --muted:#5B6866; --line:#D3DAD6; --soft:#E3E8E5;
+  --tape:#2D5BD0; --tape-ink:#FFFFFF; --tape-soft:#DCE4F8;
+  --ok:#2E7D4F; --ok-soft:#DCEFE3; --warn:#A86A12; --warn-soft:#F6EAD3; --bad:#B23A2E;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Instrument Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#111615; --card:#192120; --ink:#E4EBE8; --muted:#93A29F; --line:#2B3634; --soft:#212A29;
+  --tape:#7B9BF0; --tape-ink:#0D1424; --tape-soft:#1E2945;
+  --ok:#6CC08F; --ok-soft:#173326; --warn:#E0A94D; --warn-soft:#3A2C14; --bad:#EF7B6E; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#111615; --card:#192120; --ink:#E4EBE8; --muted:#93A29F; --line:#2B3634; --soft:#212A29;
+  --tape:#7B9BF0; --tape-ink:#0D1424; --tape-soft:#1E2945;
+  --ok:#6CC08F; --ok-soft:#173326; --warn:#E0A94D; --warn-soft:#3A2C14; --bad:#EF7B6E; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{background:var(--paper);color:var(--ink)}
+body{font-family:var(--f-body);font-size:15px;line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(26px,5vw,38px);font-weight:800;letter-spacing:-.02em}
+h2{font-size:21px;font-weight:700}
+h3{font-size:16px;font-weight:700}
+p{margin:0}
+a{color:var(--tape)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--tape);outline-offset:2px}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:1px solid var(--line)}
+.topbar{display:flex;align-items:center;gap:12px;padding-block:12px 6px}
+.brand{font-family:var(--f-display);font-weight:800;font-size:19px;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
+.brand .key{width:26px;height:26px;border-radius:7px;background:var(--tape);display:grid;place-items:center;color:var(--tape-ink)}
+.count{margin-left:auto;font-size:13px;color:var(--muted);white-space:nowrap}
+.count b{color:var(--ink);font-family:var(--f-mono)}
+nav.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;padding-block:2px 0}
+nav.tabs::-webkit-scrollbar{display:none}
+nav.tabs a{flex:none;text-decoration:none;color:var(--muted);padding:8px 12px 10px;font-weight:600;font-size:14px;border-bottom:3px solid transparent}
+nav.tabs a.on{color:var(--ink);border-bottom-color:var(--tape)}
+main{padding-block:22px 80px}
+.stack{display:flex;flex-direction:column;gap:18px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.between{justify-content:space-between}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.g3{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;min-width:0}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.num{font-variant-numeric:tabular-nums}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--card);border-radius:8px;padding:7px 12px;cursor:pointer;font-weight:600;font-size:14px;text-decoration:none;color:var(--ink)}
+.btn:hover{border-color:var(--tape)}
+.btn.primary{background:var(--tape);border-color:var(--tape);color:var(--tape-ink)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}
+.btn.ghost:hover{color:var(--ink)}
+.btn.danger{color:var(--bad)}
+.btn.sm{padding:4px 9px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:default}
+/* tape label */
+.tape{display:inline-block;background:var(--tape-soft);color:var(--ink);font-size:12px;font-weight:600;padding:2px 8px;border-radius:2px;letter-spacing:.02em;clip-path:polygon(0 8%,3% 0,97% 6%,100% 0,99% 92%,96% 100%,4% 94%,0 100%)}
+.tape.solid{background:var(--tape);color:var(--tape-ink)}
+.tape.ok{background:var(--ok-soft);color:var(--ok)}
+.tape.warn{background:var(--warn-soft);color:var(--warn)}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.dot{width:14px;height:14px;border-radius:50%;border:1px solid rgba(0,0,0,.15);flex:none;display:inline-block}
+.bar{height:8px;border-radius:4px;background:var(--soft);overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--tape)}
+.bar.ok>i{background:var(--ok)}
+.empty{border:1.5px dashed var(--line);border-radius:var(--r);padding:22px;text-align:center;color:var(--muted)}
+input[type=text],input[type=number],input[type=date],input[type=url],select,textarea{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+textarea{min-height:80px;resize:vertical}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600;color:var(--muted)}
+/* hero */
+.hero{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.daybox{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.daybox .big{font-family:var(--f-display);font-weight:800;font-size:44px;line-height:1;letter-spacing:-.03em}
+/* tasks */
+.task{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--line)}
+.task:first-child{border-top:0}
+.task input[type=checkbox]{width:20px;height:20px;margin-top:2px;accent-color:var(--ok);flex:none}
+.task .t{flex:1;min-width:0;cursor:pointer}
+.task.done .tt{text-decoration:line-through;color:var(--muted)}
+.task .meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px;font-size:12px;color:var(--muted)}
+.phase{display:flex;flex-direction:column;gap:6px}
+.addline{display:flex;gap:8px;margin-top:6px}
+/* rooms */
+.room{padding:0;overflow:hidden;cursor:pointer;display:flex;flex-direction:column}
+.room .ph{aspect-ratio:2/1;background:var(--soft);background-size:cover;background-position:center;position:relative}
+.room .ph .tape{position:absolute;left:10px;top:10px}
+.room .b{padding:12px 14px;display:flex;flex-direction:column;gap:4px}
+.swatches{display:flex;gap:4px;flex-wrap:wrap}
+/* plan */
+.planbox{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;touch-action:manipulation}
+.planbox img{display:block;width:100%;height:auto;user-select:none;-webkit-user-drag:none}
+.pin{position:absolute;transform:translate(-50%,-50%);cursor:pointer;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.18);font-size:13px;padding:4px 10px}
+.planbox.placing{cursor:crosshair;outline:3px solid var(--tape);outline-offset:-3px}
+/* mood */
+.mood{columns:3 220px;column-gap:12px}
+.mood>*{break-inside:avoid;margin-bottom:12px}
+.mi{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;position:relative}
+.mi img{display:block;width:100%;cursor:zoom-in}
+.mi .cap{padding:8px 10px;font-size:13px}
+.mi .x{position:absolute;right:6px;top:6px;opacity:0;transition:opacity .15s}
+.mi:hover .x,.mi:focus-within .x{opacity:1}
+@media (hover:none){.mi .x{opacity:1}}
+.swatchcard .chip{height:90px}
+/* table */
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{text-align:left;font-size:12px;color:var(--muted);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--line)}
+.tbl td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl td.r,.tbl th.r{text-align:right}
+.scroll{overflow-x:auto}
+/* tips */
+.tip{display:flex;flex-direction:column;gap:8px}
+.tip .act{margin-top:auto}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--card);padding:5px 11px;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer}
+.chip.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+/* chat */
+.chat{display:flex;flex-direction:column;gap:10px;max-height:520px;overflow-y:auto;padding-right:4px}
+.msg{padding:10px 12px;border-radius:10px;max-width:92%;white-space:pre-wrap;font-size:14px}
+.msg.u{align-self:flex-end;background:var(--tape);color:var(--tape-ink)}
+.msg.a{align-self:flex-start;background:var(--soft)}
+/* modal */
+.modal{position:fixed;inset:0;z-index:50;background:rgba(10,14,13,.55);display:grid;place-items:center;padding:16px}
+.sheet{background:var(--card);color:var(--ink);border-radius:14px;width:min(560px,100%);max-height:88vh;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:12px}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fgrid .full{grid-column:1/-1}
+@media (max-width:480px){.fgrid{grid-template-columns:1fr}}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:10px;z-index:80;font-size:14px;max-width:calc(100% - 32px)}
+/* viewer (altijd donker) */
+#viewer{position:fixed;inset:0;z-index:40;background:#0B0E0E;color:#E8EEEC;display:flex;flex-direction:column}
+#viewer .vt{display:flex;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) 10px max(12px,env(safe-area-inset-left,0px));background:#0B0E0E}
+#viewer .vt h3{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#viewer .stage{flex:1;position:relative;min-height:0;touch-action:none;cursor:grab}
+#viewer .stage canvas{display:block;width:100%;height:100%}
+#viewer .stage.draw{cursor:crosshair}
+#viewer .hint{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:rgba(0,0,0,.7);padding:8px 12px;border-radius:8px;font-size:13px;max-width:calc(100% - 24px);text-align:center}
+#viewer .vs{background:#141A19;padding:12px max(12px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:10px;max-height:46vh;overflow-y:auto;border-top:1px solid #26302E}
+#viewer .btn{background:#1E2625;border-color:#2F3A38;color:#E8EEEC}
+#viewer .btn.primary{background:#7B9BF0;border-color:#7B9BF0;color:#0D1424}
+#viewer select{background:#1E2625;border-color:#2F3A38;color:#E8EEEC;width:auto}
+#viewer .wchip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;border:1px solid #2F3A38;background:#1E2625;cursor:pointer;font-size:13px;font-weight:600}
+#viewer .wchip.on{border-color:#7B9BF0;box-shadow:0 0 0 2px #7B9BF0 inset}
+#viewer .pal{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+#viewer .pal button{flex:none;width:54px;border:0;background:none;padding:0;cursor:pointer;color:#C9D3D0;font-size:10px;text-align:center}
+#viewer .pal .sw{display:block;width:54px;height:40px;border-radius:6px;border:2px solid #2F3A38;margin-bottom:3px}
+#viewer .pal button.on .sw{border-color:#fff;box-shadow:0 0 0 2px #7B9BF0}
+#viewer .muted{color:#94A39F}
+#viewer .spin{position:absolute;inset:0;display:grid;place-items:center;font-size:14px;color:#94A39F}
+.lb{position:fixed;inset:0;z-index:45;background:rgba(5,8,8,.9);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;color:#E8EEEC}
+.lb canvas{max-width:100%;max-height:72vh;cursor:crosshair;border-radius:6px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand"><span class="key" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3 20 3m-3 3 3 3m-6-0 2 2"/></svg></span>Ons Nieuwe Huis</div>
+      <div class="count" id="countTop"></div>
+    </div>
+    <nav class="tabs" id="tabs">
+      <a href="#overzicht" data-r="overzicht">Overzicht</a>
+      <a href="#plattegrond" data-r="plattegrond">Plattegrond</a>
+      <a href="#kamers" data-r="kamers">Kamers</a>
+      <a href="#planning" data-r="planning">Planning</a>
+      <a href="#kosten" data-r="kosten">Kosten & bestellen</a>
+      <a href="#smarthome" data-r="smarthome">Smarthome</a>
+      <a href="#tips" data-r="tips">Tips</a>
+    </nav>
+  </div>
+</header>
+<main class="wrap" id="app"><div class="empty">De gegevens worden geladen…</div></main>
+<div id="layer"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+"use strict";
+/* ---------- constanten ---------- */
+const KEY_DATE_DEFAULT="2027-01-07", MOVE_DATE_DEFAULT="2027-01-09";
+const PHASES=[
+  {id:"voor",name:"Voorbereiden",sub:"nu t/m 6 januari"},
+  {id:"sleutel",name:"Sleutel & klussen",sub:"7–8 januari"},
+  {id:"verhuis",name:"Verhuisdag",sub:"9 januari"},
+  {id:"na",name:"Eerste weken",sub:"als we er wonen"},
+  {id:"later",name:"Later",sub:"lente & zomer"}
+];
+const ITEM_CATS=["Verf & klussen","Meubels","Verlichting","Raamdecoratie","Smarthome","Tuin","Verhuizing","Overig"];
+const ITEM_STATUS=[["idee","Idee"],["kiezen","Nog kiezen"],["bestellen","Te bestellen"],["besteld","Besteld"],["binnen","Binnen"]];
+const SH_KINDS=["Hardware","Software","Automatisering","Idee"];
+const SH_STATUS=[["idee","Idee"],["gekozen","Gekozen"],["besteld","Besteld"],["klaar","Geïnstalleerd"]];
+const ROOM_COLORS=["#2D5BD0","#2E7D4F","#C0533A","#8E44AD","#D4A017","#16808C","#B5487C","#5D6D7E","#7A5C3E","#E07B39"];
+
+/* ---------- tips ---------- */
+const TIPS=[
+ {id:"reg-brp",cat:"Regelen",t:"Verhuizing doorgeven aan de gemeente",b:"Kan vanaf 4 weken vóór tot uiterlijk 5 dagen na de verhuisdatum, met DigiD via de site van je nieuwe gemeente. Belastingdienst, RDW en de meeste zorgverzekeraars krijgen het dan automatisch door.",task:{phase:"voor",date:"2026-12-12"}},
+ {id:"reg-internet",cat:"Regelen",t:"Internet nú aanvragen",b:"Een monteur-afspraak kan 2–3 weken duren. Check welke aansluiting er op het adres ligt (glasvezel of kabel). Je smarthome hangt ervan af, dus liefst werkend op de sleuteldag.",task:{phase:"voor",date:"2026-11-25"}},
+ {id:"reg-energie",cat:"Regelen",t:"Energie en water aanmelden per 7 januari",b:"Meld stroom/gas aan op het nieuwe adres vanaf de sleuteldatum en zeg het oude adres op per de opleverdatum. Water gaat meestal automatisch per adres, maar check het bij het waterbedrijf.",task:{phase:"voor",date:"2026-12-01"}},
+ {id:"reg-oud",cat:"Regelen",t:"Huidige woning opzeggen of oplevering afspreken",b:"Huren jullie nu? De opzegtermijn is meestal één maand. Plan een voorinspectie, dan weet je wat er bij oplevering nog moet gebeuren.",task:{phase:"voor",date:"2026-11-30"}},
+ {id:"reg-post",cat:"Regelen",t:"Post laten doorsturen",b:"Via de Verhuisservice van PostNL wordt post naar het oude adres een tijd doorgestuurd. Handig voor alles wat je vergeet te wijzigen.",task:{phase:"voor",date:"2027-01-02"}},
+ {id:"reg-verzekering",cat:"Regelen",t:"Inboedelverzekering verhuizen",b:"Wijzig het adres per de verhuisdatum en vraag of schade tijdens zelf verhuizen gedekt is. De opstalverzekering moet vanaf de overdracht lopen (meestal al geregeld via de hypotheek, check het).",task:{phase:"voor"}},
+ {id:"reg-adres",cat:"Regelen",t:"Adreswijziging bij de rest",b:"Bank, werkgever, abonnementen, webshops, huisarts/tandarts, sportschool, goede doelen en klantenkaarten. Die krijgen het niet via de gemeente.",task:{phase:"na"}},
+ {id:"reg-afval",cat:"Regelen",t:"Afvalcontainers en -pas",b:"Vraag bij de gemeente of de containers bij het huis horen en of je een pas nodig hebt voor de ondergrondse container of de milieustraat.",task:{phase:"voor"}},
+ {id:"vd-ontheffing",cat:"Verhuisdag",t:"Ontheffing of parkeervak voor lift en bakwagen",b:"Bij veel gemeenten moet je een verhuislift op de openbare weg of een gereserveerd parkeervak 1–2 weken vooraf aanvragen. Check dit voor het huidige én het nieuwe adres.",task:{phase:"voor",date:"2026-12-15"}},
+ {id:"vd-bakwagen",cat:"Verhuisdag",t:"Bakwagen: rijbewijs en verzekering checken",b:"Met rijbewijs B mag je rijden tot 3.500 kg maximaal toegestane massa. Vraag wie verzekerd is als jullie rijden, en neem spanbanden en verhuisdekens mee.",task:{phase:"voor"}},
+ {id:"vd-rooster",cat:"Verhuisdag",t:"Helpersrooster maken",b:"Wie rijdt welke auto, wie staat bij de lift, wie wijst in het nieuwe huis de kamers aan. Op 9 januari is het licht van ongeveer 8:45 tot 16:45, dus begin vroeg. Bij vorst: strooizout bij beide ingangen.",task:{phase:"voor",date:"2027-01-04"}},
+ {id:"vd-labels",cat:"Verhuisdag",t:"Dozen labelen met een kamerkleur",b:"Geef elke kamer een kleur (staat al in deze app) en zet die op elke doos, met een nummer. Hang in het nieuwe huis hetzelfde kleurkaartje op elke deur. Helpers hoeven dan niets te vragen.",task:{phase:"voor"}},
+ {id:"vd-eerstenacht",cat:"Verhuisdag",t:"Eerste-nacht-doos",b:"Beddengoed, toiletpapier, handdoeken, opladers, medicijnen, waterkoker, koffie/thee, bekers, snacks, schaar, cutter, schroevendraaier, vuilniszakken en losse lampjes (er hangen vaak geen lampen).",task:{phase:"verhuis"}},
+ {id:"vd-eten",cat:"Verhuisdag",t:"Eten en drinken voor helpers",b:"Spreek af wanneer jullie lunch en avondeten bestellen en zet water en koffie klaar in het nieuwe huis. Koffie in de ochtend scheelt veel.",task:{phase:"verhuis"}},
+ {id:"vd-bed",cat:"Verhuisdag",t:"Bed als eerste opbouwen",b:"Om 23:00 nog een bed in elkaar zetten is geen pretje. Er zijn nog geen gordijnen, dus regel tijdelijke verduistering voor de slaapkamer (verduisteringsfolie of plakgordijn).",task:{phase:"verhuis"}},
+ {id:"vd-bescherm",cat:"Verhuisdag",t:"Vloer, trap en deurposten beschermen",b:"Leg een stucloper of karton op de vloer en zet hoekbeschermers bij smalle doorgangen. Juist in een schoon, opgeleverd huis wil je geen krassen.",task:{phase:"sleutel"}},
+ {id:"vd-oplevering",cat:"Verhuisdag",t:"Oude woning schoon opleveren",b:"Na het leeghalen schoonmaken, meterstanden met foto vastleggen en alle sleutels inleveren. Plan dit niet op dezelfde avond als de verhuizing.",task:{phase:"na"}},
+ {id:"sl-meters",cat:"Sleutel & klussen",t:"Meterstanden fotograferen bij de sleutel",b:"Fotografeer stroom, gas en water bij de overdracht op 7 januari en geef de standen door aan de leveranciers.",task:{phase:"sleutel",date:"2027-01-07"}},
+ {id:"sl-sloten",cat:"Sleutel & klussen",t:"Cilinders laten vervangen",b:"Je weet niet hoeveel sleutels er nog rondgaan. Nieuwe cilinders (SKG**) kosten weinig en plaats je zelf in 10 minuten per deur.",task:{phase:"sleutel"}},
+ {id:"sl-rondgang",cat:"Sleutel & klussen",t:"Rondgang: weet waar alles zit",b:"Hoofdkraan, gasafsluiter, groepenkast (maak een foto en label de groepen), cv-ketel, warm water. Check meteen of alles werkt.",task:{phase:"sleutel",date:"2027-01-07"}},
+ {id:"sl-rook",cat:"Sleutel & klussen",t:"Rookmelders checken",b:"Sinds 1 juli 2022 moet er op elke verdieping met een verblijfsruimte of vluchtroute een rookmelder hangen. Test ze, of hang meteen koppelbare slimme melders op.",task:{phase:"sleutel"}},
+ {id:"sl-schoon",cat:"Sleutel & klussen",t:"Schoonmaken vóór de spullen komen",b:"Kastjes van binnen, keuken, badkamer, ventilatieroosters en plinten. Een leeg huis is het makkelijkste moment.",task:{phase:"sleutel",date:"2027-01-08"}},
+ {id:"sl-kabels",cat:"Sleutel & klussen",t:"Netwerk plannen nu het huis leeg is",b:"Meet de wifi in elke kamer en bekijk waar access points of netwerkkabels moeten (tv, bureau, camera's). Achter een leeg plint of door een lege kast trek je veel makkelijker kabels.",task:{phase:"sleutel"}},
+ {id:"vf-temp",cat:"Schilderen",t:"Schilderen in januari: warm stoken",b:"Muurverf heeft meestal minimaal zo'n 10 °C nodig (check het blik). Zet de verwarming op 7 januari meteen aan en ventileer wel. Eerste laag op de 7e, tweede laag op de 8e is haalbaar.",task:{phase:"sleutel",date:"2027-01-07"}},
+ {id:"vf-hoeveel",cat:"Schilderen",t:"Hoeveel verf heb je nodig?",b:"Reken ongeveer 1 liter per 8–10 m² per laag en twee lagen. Van licht naar donker (of andersom) soms drie lagen of een primer. Vul in Kosten per kleur de m² in, dan rekent de app het uit.",task:null},
+ {id:"vf-spullen",cat:"Schilderen",t:"Schilderspullen-lijstje",b:"Afplaktape, stucloper/afdekfolie, roller met verlengsteel, kwast voor hoeken, verfbak, plamuur, schuurpapier, ontvetter, trapje en oude kleren. Schroef afdekplaten van stopcontacten los (stroom eraf).",task:{phase:"voor",date:"2027-01-05"}},
+ {id:"vf-staal",cat:"Schilderen",t:"Proefstaal op de muur zelf bekijken",b:"Schermkleuren (ook in deze app) wijken af van verf op de muur. Zet een proefplak of testpotje op de muur en kijk 's ochtends, 's middags en 's avonds.",task:{phase:"sleutel"}},
+ {id:"vf-code",cat:"Schilderen",t:"Noteer merk, kleurcode en glansgraad",b:"Over twee jaar wil je een beschadiging bijwerken. Leg per muur merk, code en glans vast (dat kan in de 360°-viewer) en bewaar een restje verf.",task:null},
+ {id:"sh-platform",cat:"Smarthome",t:"Eerst platform kiezen, dan pas apparaten",b:"Kies je basis (Home Assistant, Apple Home, Google Home of Homey) en welke protocollen (Zigbee, Matter/Thread of wifi) voordat je losse spullen koopt. Dat voorkomt vijf losse apps.",task:{phase:"na"}},
+ {id:"sh-nuldraad",cat:"Smarthome",t:"Nuldraad in de schakeldozen?",b:"Veel slimme schakelaars en inbouwmodules hebben een nuldraad nodig. Kijk bij het schoonmaken achter een schakelaar (stroom eraf). Zonder nuldraad: modules zonder nul of slimme lampen.",task:{phase:"sleutel"}},
+ {id:"sh-p1",cat:"Smarthome",t:"P1-poort van de slimme meter",b:"Met een P1-dongle op de slimme meter zie je live je stroom- en gasverbruik. Dat is een goedkope eerste stap die meteen inzicht geeft.",task:{phase:"na"}},
+ {id:"sh-thermo",cat:"Smarthome",t:"Slimme thermostaat: check OpenTherm",b:"Kijk welk merk en type cv-ketel er hangt en of die OpenTherm ondersteunt. Dat bepaalt welke slimme thermostaat goed regelt (modulerend in plaats van aan/uit).",task:{phase:"sleutel"}},
+ {id:"vg-papieren",cat:"Vergeet-je-niet",t:"Belangrijke papieren apart",b:"Paspoorten, koopakte, hypotheekstukken en sleutels in een tas die jullie zelf meenemen, niet in een verhuisdoos.",task:{phase:"verhuis"}},
+ {id:"vg-kabels",cat:"Vergeet-je-niet",t:"Foto van kabels achter tv en pc",b:"Maak een foto voordat je loskoppelt. Stop kabels en schroefjes per apparaat in een zakje en plak dat op het apparaat.",task:{phase:"voor"}},
+ {id:"vg-koelkast",cat:"Vergeet-je-niet",t:"Koelkast en vriezer",b:"Leeg en ontdooi ze de dag ervoor. Na transport een paar uur laten staan voordat je ze aanzet, zeker als ze liggend vervoerd zijn.",task:{phase:"voor",date:"2027-01-08"}},
+ {id:"vg-wasmachine",cat:"Vergeet-je-niet",t:"Transportbouten wasmachine",b:"Zet de transportbouten terug voor het vervoer (zoek ze nu op). Zonder bouten kan de trommel beschadigen.",task:{phase:"voor"}},
+ {id:"vg-buren",cat:"Vergeet-je-niet",t:"Buren laten weten dat jullie komen",b:"Een briefje bij de huidige buren voor de liftdag, en even aanbellen bij de nieuwe buren. Dat helpt als de lift of bakwagen een tijdje in de weg staat.",task:{phase:"voor"}},
+ {id:"vg-ehbo",cat:"Vergeet-je-niet",t:"Klustasje bij de hand",b:"Pleisters, werkhandschoenen, cutter, tape en een stiftje in één tas die de hele dag bij je blijft.",task:{phase:"verhuis"}}
+];
+const TIP_CATS=[...new Set(TIPS.map(t=>t.cat))];
+
+/* ---------- helpers ---------- */
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const eur=n=>"€ "+(Number(n)||0).toLocaleString("nl-NL",{minimumFractionDigits:0,maximumFractionDigits:2});
+const num=v=>{const n=parseFloat(String(v??"").replace(",","."));return isFinite(n)?n:0};
+const dfmt=d=>{if(!d)return"";const x=new Date(d+"T12:00:00");return x.toLocaleDateString("nl-NL",{day:"numeric",month:"short"})};
+const daysTo=d=>Math.ceil((new Date(d+"T00:00:00")-new Date(new Date().toDateString()))/864e5);
+const rid=()=>Math.random().toString(36).slice(2,10);
+const assetUrl=id=>id?"/_blob/"+id:"";
+function toast(msg,ms=2600){const t=document.createElement("div");t.className="toast";t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),ms)}
+const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+function hexToRgb(h){h=String(h||"").replace("#","");if(h.length===3)h=h.split("").map(c=>c+c).join("");const n=parseInt(h,16);if(isNaN(n)||h.length!==6)return null;return[n>>16&255,n>>8&255,n&255]}
+const rgbToHex=(r,g,b)=>"#"+[r,g,b].map(v=>Math.round(v).toString(16).padStart(2,"0")).join("").toUpperCase();
+
+/* ---------- staat ---------- */
+const COLS=["rooms","photos","paints","plans","tasks","items","mood","sh","settings","chat"];
+const S={loaded:{}};COLS.forEach(c=>S[c]=[]);
+let db=null,assets=null,userCap=null,downloads=null,sample=null,meId=null,canUpload=false;
+const settings=()=>Object.assign({keyDate:KEY_DATE_DEFAULT,moveDate:MOVE_DATE_DEFAULT,budget:0},(S.settings.find(d=>d.id==="main")||{}));
+const byId=(col,id)=>S[col].find(x=>x.id===id);
+const roomName=id=>(byId("rooms",id)||{}).name||"";
+const sortRooms=()=>[...S.rooms].sort((a,b)=>(a.order??0)-(b.order??0)||String(a.name).localeCompare(b.name));
+
+async function add(col,data){const ref=db.collection(col).doc();await ref.set({...data,createdAt:Date.now()});return ref.id}
+async function upd(col,id,data){await db.collection(col).doc(id).update(data)}
+async function setDoc(col,id,data){await db.collection(col).doc(id).set(data)}
+async function del(col,id){await db.collection(col).doc(id).delete()}
+async function safe(fn,msg="Opslaan lukte niet. Probeer het opnieuw."){try{return await fn()}catch(e){console.error(e);toast(e&&e.code==="quota_exceeded"?"De opslag van de app is vol.":msg);return null}}
+
+/* ---------- render met behoud van invoer ---------- */
+let renderQueued=false;
+function render(){if(renderQueued)return;renderQueued=true;requestAnimationFrame(()=>{renderQueued=false;doRender()})}
+function doRender(){
+  const app=$("#app");const act=document.activeElement;const keep={};
+  app.querySelectorAll("input[id],textarea[id],select[id]").forEach(el=>{if(el.type!=="checkbox")keep[el.id]=el.value});
+  const focusId=act&&app.contains(act)?act.id:null;let sel=null;try{if(focusId)sel=[act.selectionStart,act.selectionEnd]}catch(e){}
+  const chatScroll=$("#chatlog")?.scrollTop;
+  const route=(location.hash||"#overzicht").slice(1);
+  document.querySelectorAll("#tabs a").forEach(a=>a.classList.toggle("on",route===a.dataset.r||(route.startsWith("kamer-")&&a.dataset.r==="kamers")));
+  renderCount();
+  let html="";
+  if(!db){html=noDb()}
+  else if(route.startsWith("kamer-"))html=viewRoom(route.slice(6));
+  else html=({overzicht:viewHome,plattegrond:viewPlan,kamers:viewRooms,planning:viewPlanning,kosten:viewCosts,smarthome:viewSmart,tips:viewTips}[route]||viewHome)();
+  app.innerHTML=html;
+  for(const id in keep){const el=document.getElementById(id);if(el&&el.type!=="file")el.value=keep[id]}
+  if(focusId){const el=document.getElementById(focusId);if(el){el.focus();try{if(sel)el.setSelectionRange(sel[0],sel[1])}catch(e){}}}
+  const cl=$("#chatlog");if(cl)cl.scrollTop=chatScroll??cl.scrollHeight;
+  if(route==="plattegrond")bindPlan();
+}
+function noDb(){return `<div class="card stack"><h2>Opslag niet beschikbaar</h2><p class="muted">Deze app bewaart alles in een gedeelde opslag. Die is in deze weergave niet bereikbaar. Open de app ingelogd op claude.ai, of vraag de eigenaar om je toegang als Editor te geven.</p></div>`}
+function renderCount(){const s=settings();const k=daysTo(s.keyDate),m=daysTo(s.moveDate);
+  $("#countTop").innerHTML=k>0?`sleutel over <b>${k}</b> d · verhuizen over <b>${m}</b> d`:m>0?`verhuizen over <b>${m}</b> d`:`we wonen er!`}
+
+/* ---------- Overzicht ---------- */
+function viewHome(){
+  const s=settings();const k=daysTo(s.keyDate),m=daysTo(s.moveDate);
+  const open=S.tasks.filter(t=>!t.done);
+  const nxt=[...open].sort(taskSort).slice(0,7);
+  const cost=costModel();
+  const phaseStats=PHASES.map(p=>{const ts=S.tasks.filter(t=>(t.phase||"voor")===p.id);const d=ts.filter(t=>t.done).length;return{p,n:ts.length,d}});
+  return `<div class="stack">
+  <div class="hero">
+    <div class="daybox"><div class="eyebrow">Sleutel · ${esc(dfmt(s.keyDate))}</div><div class="big num">${k>0?k:"✓"}</div><div class="muted small">${k>0?"dagen tot de sleuteloverdracht":"sleutel is binnen"}</div></div>
+    <div class="daybox"><div class="eyebrow">Verhuisdag · ${esc(dfmt(s.moveDate))}</div><div class="big num">${m>0?m:"✓"}</div><div class="muted small">${m>0?"dagen tot de verhuizing":"verhuisd"}</div></div>
+    <div class="daybox"><div class="eyebrow">Budget</div><div class="big num" style="font-size:32px">${eur(cost.planned)}</div><div class="muted small">begroot${s.budget?` van ${eur(s.budget)}`:""} · ${eur(cost.spent)} uitgegeven</div>${s.budget?`<div class="bar" style="margin-top:8px"><i style="width:${Math.min(100,cost.planned/s.budget*100)}%"></i></div>`:""}</div>
+  </div>
+  <div class="grid g2">
+    <section class="card"><div class="row between"><h2>Eerstvolgende taken</h2><a class="btn sm" href="#planning">Planning</a></div>
+      <div style="margin-top:8px">${nxt.length?nxt.map(taskRow).join(""):`<div class="empty">Nog geen open taken. Voeg ze toe in Planning of vanuit Tips.</div>`}</div></section>
+    <section class="card stack"><h2>Voortgang per fase</h2>
+      ${phaseStats.map(x=>`<div><div class="row between small"><span><b>${esc(x.p.name)}</b> <span class="muted">${esc(x.p.sub)}</span></span><span class="num muted">${x.d}/${x.n}</span></div><div class="bar ok"><i style="width:${x.n?x.d/x.n*100:0}%"></i></div></div>`).join("")}
+    </section>
+  </div>
+  <section class="stack"><div class="row between"><h2>Kamers</h2><a class="btn sm" href="#kamers">Alle kamers</a></div>
+    ${S.rooms.length?`<div class="grid g3">${sortRooms().map(roomCard).join("")}</div>`:`<div class="empty">Nog geen kamers. Ga naar <a href="#kamers">Kamers</a> en laad jullie 360°-foto's in. Dan komt er per foto een kamer bij.</div>`}
+  </section>
+  <section class="card"><div class="row between"><h2>Datums</h2></div>
+    <div class="row" style="margin-top:8px"><label class="f">Sleutel<input type="date" id="set-key" value="${esc(s.keyDate)}" data-set="keyDate"></label><label class="f">Verhuisdag<input type="date" id="set-move" value="${esc(s.moveDate)}" data-set="moveDate"></label></div>
+  </section></div>`;
+}
+function taskSort(a,b){const pi=x=>PHASES.findIndex(p=>p.id===(x.phase||"voor"));return pi(a)-pi(b)||String(a.date||"9999").localeCompare(String(b.date||"9999"))||(a.createdAt||0)-(b.createdAt||0)}
+function taskRow(t){
+  const r=t.roomId?byId("rooms",t.roomId):null;
+  return `<div class="task ${t.done?"done":""}"><input type="checkbox" ${t.done?"checked":""} data-toggle="${t.id}" aria-label="Afvinken: ${esc(t.title)}">
+  <div class="t" data-edit-task="${t.id}"><div class="tt">${esc(t.title)}</div><div class="meta">${t.date?`<span class="mono">${esc(dfmt(t.date))}</span>`:""}${r?`<span class="tape" style="background:${esc(r.color||"var(--tape-soft)")}22">${esc(r.name)}</span>`:""}${num(t.cost)?`<span class="mono">${eur(t.cost)}</span>`:""}${t.notes?`<span>📝</span>`:""}</div></div></div>`;
+}
+function roomCard(r){
+  const ph=S.photos.filter(p=>p.roomId===r.id);const th=ph.find(p=>p.thumbId);
+  const pals=roomPaints(r.id);
+  const open=S.tasks.filter(t=>t.roomId===r.id&&!t.done).length;
+  return `<a class="card room" href="#kamer-${r.id}" style="text-decoration:none;color:inherit"><div class="ph" style="${th?`background-image:url('${assetUrl(th.thumbId)}')`:""}"><span class="tape" style="background:${esc(r.color||"#2D5BD0")};color:#fff">${esc(r.name||"Kamer")}</span></div>
+  <div class="b"><div class="small muted">${esc(r.style||"Nog geen stijl")}</div><div class="row between"><div class="swatches">${pals.map(p=>`<span class="dot" style="background:${esc(p.hex)}" title="${esc(p.name)}"></span>`).join("")}</div><span class="small muted">${ph.length} foto${ph.length===1?"":"'s"} · ${open} open</span></div></div></a>`;
+}
+function roomPaints(roomId){const ids=new Set();S.photos.filter(p=>p.roomId===roomId).forEach(p=>{const v=(p.variants||[]).find(v=>v.id===p.activeVariant)||(p.variants||[])[0];if(v)Object.values(v.colors||{}).forEach(id=>id&&ids.add(id))});return[...ids].map(id=>byId("paints",id)).filter(Boolean)}
+
+/* ---------- Kamers ---------- */
+function viewRooms(){
+  return `<div class="stack"><div class="row between"><div><h1>Kamers</h1><p class="muted">Elke kamer heeft een eigen stijl, 360°-foto's, moodboard, taken en bestellijst.</p></div>
+  <div class="row">${canUpload?`<label class="btn primary">360°-foto's inladen<input type="file" accept="image/*" multiple hidden id="batchPano"></label>`:""}<button class="btn" data-act="newRoom">Nieuwe kamer</button></div></div>
+  ${canUpload?`<p class="small muted">Bij meerdere foto's tegelijk wordt per foto een kamer gemaakt met de bestandsnaam als naam. Die kun je daarna aanpassen.</p>`:`<p class="small muted">Foto's uploaden kan alleen met Editor-rechten op deze app.</p>`}
+  ${S.rooms.length?`<div class="grid g3">${sortRooms().map(roomCard).join("")}</div>`:`<div class="empty">Nog geen kamers. Laad jullie 360°-foto's in (het beste vanaf de pc) of maak handmatig een kamer.</div>`}</div>`;
+}
+function viewRoom(id){
+  const r=byId("rooms",id);if(!r)return S.loaded.rooms?`<div class="empty">Deze kamer bestaat niet (meer). <a href="#kamers">Terug naar kamers</a></div>`:`<div class="empty">Laden…</div>`;
+  const ph=S.photos.filter(p=>p.roomId===id).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+  const tasks=S.tasks.filter(t=>t.roomId===id).sort(taskSort);
+  const items=S.items.filter(i=>i.roomId===id);
+  const mood=S.mood.filter(m=>m.roomId===id).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+  const walls=[];ph.forEach(p=>{const v=activeVar(p);(p.walls||[]).filter(w=>!w.exclude).forEach(w=>walls.push({p,w,paint:byId("paints",(v.colors||{})[w.id])}))});
+  return `<div class="stack">
+  <div class="row between"><div class="stack" style="gap:6px"><a href="#kamers" class="small">← Kamers</a><div class="row"><span class="dot" style="width:22px;height:22px;background:${esc(r.color||"#2D5BD0")}"></span><h1>${esc(r.name)}</h1></div>
+  <p class="muted">${r.style?`Stijl: <b style="color:var(--ink)">${esc(r.style)}</b>`:"Nog geen stijl gekozen"}${r.notes?` · ${esc(r.notes)}`:""}</p></div>
+  <div class="row"><button class="btn" data-act="editRoom" data-id="${id}">Bewerken</button><button class="btn" data-act="exportRoom" data-id="${id}" ${downloads?"":"disabled title='Downloaden is hier niet beschikbaar'"}>Download deze kamer</button></div></div>
+
+  <section class="stack"><div class="row between"><h2>360°-foto's</h2>${canUpload?`<label class="btn sm">Foto toevoegen<input type="file" accept="image/*" hidden data-pano-room="${id}"></label>`:""}</div>
+    ${ph.length?`<div class="grid g3">${ph.map(p=>`<div class="card room" data-open-pano="${p.id}"><div class="ph" style="background-image:url('${assetUrl(p.thumbId)}')"><span class="tape solid">Open in 360°</span></div><div class="b"><b>${esc(p.name||"Foto")}</b><span class="small muted">${(p.walls||[]).filter(w=>!w.exclude).length} muren · ${(p.variants||[]).length} variant${(p.variants||[]).length===1?"":"en"}</span></div></div>`).join("")}</div>`:`<div class="empty">Nog geen 360°-foto van deze kamer.</div>`}
+  </section>
+
+  <section class="card stack"><h2>Kleuren per muur</h2>
+   ${walls.length?`<div class="scroll"><table class="tbl"><tr><th>Muur</th><th>Kleur</th><th>Merk & code</th><th class="r">m²</th></tr>${walls.map(x=>`<tr><td>${esc(x.w.name)}<div class="small muted">${esc(x.p.name)} · ${esc(activeVar(x.p).name)}</div></td><td>${x.paint?`<span class="row" style="gap:6px"><span class="dot" style="background:${esc(x.paint.hex)}"></span>${esc(x.paint.name)}</span>`:`<span class="muted">Origineel</span>`}</td><td class="mono small">${x.paint?esc([x.paint.brand,x.paint.code,x.paint.sheen].filter(Boolean).join(" · ")):""}</td><td class="r mono">${num(x.w.m2)||""}</td></tr>`).join("")}</table></div>`:`<p class="muted">Open een 360°-foto en teken de muren om ze een kleur te geven.</p>`}
+  </section>
+
+  <section class="stack"><div class="row between"><h2>Moodboard</h2><div class="row">${canUpload?`<label class="btn sm">Afbeeldingen<input type="file" accept="image/*" multiple hidden data-mood-img="${id}"></label>`:""}<button class="btn sm" data-act="moodLink" data-id="${id}">Pinterest / link</button><button class="btn sm" data-act="moodSwatch" data-id="${id}">Kleurstaal</button><button class="btn sm" data-act="moodNote" data-id="${id}">Notitie</button></div></div>
+   ${mood.length?`<div class="mood">${mood.map(moodItem).join("")}</div>`:`<div class="empty">Zet hier Pinterest-links, screenshots, kleurstalen en notities voor ${esc(r.name)}. Tik op een afbeelding om er een kleur uit te pakken.</div>`}
+  </section>
+
+  <div class="grid g2">
+   <section class="card"><h2>Taken</h2><div style="margin-top:6px">${tasks.map(taskRow).join("")||`<p class="muted small">Nog geen taken voor deze kamer.</p>`}</div>
+    <form class="addline" data-addtask-room="${id}"><input type="text" id="rt-${id}" placeholder="Nieuwe taak voor ${esc(r.name)}…"><button class="btn">Toevoegen</button></form></section>
+   <section class="card"><div class="row between"><h2>Bestellijst</h2><button class="btn sm" data-act="newItem" data-room="${id}">Item</button></div>
+    ${items.length?itemTable(items,false):`<p class="muted small" style="margin-top:6px">Meubels, lampen, gordijnen: alles wat voor deze kamer gekocht moet worden.</p>`}</section>
+  </div>
+  <div><button class="btn ghost danger" data-act="delRoom" data-id="${id}">Kamer verwijderen</button></div>
+  </div>`;
+}
+function moodItem(m){
+  const x=`<button class="btn sm x" data-del-mood="${m.id}" aria-label="Verwijderen">✕</button>`;
+  if(m.type==="image")return `<div class="mi"><img src="${assetUrl(m.assetId)}" alt="${esc(m.caption||"Moodboard-afbeelding")}" loading="lazy" data-pick="${m.id}">${m.caption?`<div class="cap">${esc(m.caption)}</div>`:""}${x}</div>`;
+  if(m.type==="link"){let host="";try{host=new URL(m.href).hostname.replace("www.","")}catch(e){}
+    return `<div class="mi"><div class="cap stack" style="gap:4px"><span class="tape ${/pinterest/.test(host)?"solid":""}">${esc(/pinterest/.test(host)?"Pinterest":host||"Link")}</span><a href="${esc(m.href)}" target="_blank" rel="noopener">${esc(m.caption||m.href)}</a></div>${x}</div>`}
+  if(m.type==="swatch"){const p=byId("paints",m.paintId);if(!p)return"";return `<div class="mi swatchcard"><div class="chip" style="background:${esc(p.hex)}"></div><div class="cap"><b>${esc(p.name)}</b><div class="mono small muted">${esc([p.brand,p.code].filter(Boolean).join(" · "))} · ${esc(p.hex)}</div></div>${x}</div>`}
+  return `<div class="mi"><div class="cap" style="font-size:15px;white-space:pre-wrap">${esc(m.text)}</div>${x}</div>`;
+}
+
+/* ---------- Plattegrond ---------- */
+let planSel=lsGet("planSel",null),placing=null;
+function viewPlan(){
+  const plans=[...S.plans].sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+  const cur=plans.find(p=>p.id===planSel)||plans[0];
+  const pins=cur?S.rooms.filter(r=>r.planId===cur.id):[];
+  return `<div class="stack"><div class="row between"><div><h1>Plattegrond</h1><p class="muted">Tik op een kamer om alles van die ruimte te zien.</p></div>
+  <div class="row">${canUpload?`<label class="btn ${plans.length?"":"primary"}">Plattegrond uploaden<input type="file" accept="image/*" hidden id="planUp"></label>`:""}${cur?`<button class="btn" data-act="delPlan" data-id="${cur.id}">Verwijder deze</button>`:""}</div></div>
+  ${plans.length>1?`<div class="chips">${plans.map(p=>`<button class="chip ${p.id===cur.id?"on":""}" data-plan="${p.id}">${esc(p.name)}</button>`).join("")}</div>`:""}
+  ${cur?`<div class="card stack" style="gap:8px"><div class="small"><b>Kamers plaatsen:</b> kies een kamer en tik op de plek in de plattegrond.</div>
+    <div class="chips">${sortRooms().map(r=>`<button class="chip ${placing===r.id?"on":""}" data-place="${r.id}"><span class="dot" style="background:${esc(r.color||"#2D5BD0")};width:10px;height:10px"></span> ${esc(r.name)}${r.planId===cur.id?" ✓":""}</button>`).join("")||`<span class="muted small">Maak eerst kamers aan bij Kamers.</span>`}${placing?`<button class="chip" data-place="">Klaar</button>`:""}</div></div>
+  <div class="planbox ${placing?"placing":""}" id="planbox" data-plan-id="${cur.id}"><img src="${assetUrl(cur.assetId)}" alt="Plattegrond ${esc(cur.name)}">
+    ${pins.map(r=>`<span class="tape pin" data-pin="${r.id}" style="left:${r.x*100}%;top:${r.y*100}%;background:${esc(r.color||"#2D5BD0")};color:#fff">${esc(r.name)}</span>`).join("")}</div>`
+  :`<div class="empty">Upload een afbeelding van de plattegrond (screenshot of foto uit de Funda- of makelaarsbrochure). Een PDF? Maak er eerst een screenshot van. Heb je meerdere verdiepingen, upload ze dan los.</div>`}</div>`;
+}
+function bindPlan(){const box=$("#planbox");if(!box)return;
+  box.onclick=async e=>{const pin=e.target.closest("[data-pin]");
+    if(!placing){if(pin)location.hash="#kamer-"+pin.dataset.pin;return}
+    const rect=box.getBoundingClientRect();const x=(e.clientX-rect.left)/rect.width,y=(e.clientY-rect.top)/rect.height;
+    await safe(()=>upd("rooms",placing,{planId:box.dataset.planId,x,y}));
+    const ids=sortRooms().map(r=>r.id);const i=ids.indexOf(placing);const next=ids.slice(i+1).find(id=>!byId("rooms",id).planId);placing=next||null;render()}}
+
+/* ---------- Planning ---------- */
+let planFilter=lsGet("planFilter","alles");
+function viewPlanning(){
+  const rooms=sortRooms();
+  const vis=t=>planFilter==="alles"||(planFilter==="open"&&!t.done)||(planFilter===t.roomId);
+  return `<div class="stack"><div class="row between"><div><h1>Planning</h1><p class="muted">Wat moet er geregeld worden, en wanneer. Vink af wat klaar is.</p></div><button class="btn primary" data-act="newTask">Nieuwe taak</button></div>
+  <div class="chips"><button class="chip ${planFilter==="alles"?"on":""}" data-pf="alles">Alles</button><button class="chip ${planFilter==="open"?"on":""}" data-pf="open">Alleen open</button>${rooms.map(r=>`<button class="chip ${planFilter===r.id?"on":""}" data-pf="${r.id}">${esc(r.name)}</button>`).join("")}</div>
+  <div class="grid g2">${PHASES.map(p=>{const ts=S.tasks.filter(t=>(t.phase||"voor")===p.id);const sh=ts.filter(vis).sort(taskSort);const d=ts.filter(t=>t.done).length;
+    return `<section class="card phase"><div class="row between"><div><h2>${esc(p.name)}</h2><div class="small muted">${esc(p.sub)}</div></div><span class="tape ${d===ts.length&&ts.length?"ok":""} num">${d}/${ts.length}</span></div>
+    <div>${sh.map(taskRow).join("")||`<p class="muted small">Niets in deze fase${planFilter!=="alles"?" (met dit filter)":""}.</p>`}</div>
+    <form class="addline" data-addtask-phase="${p.id}"><input type="text" id="pt-${p.id}" placeholder="Snel toevoegen…"><button class="btn">+</button></form></section>`}).join("")}</div></div>`;
+}
+
+/* ---------- Kosten ---------- */
+function paintCalc(p){const m2=num(p.m2),layers=num(p.layers)||2,cov=num(p.coverage)||9;const liters=m2*layers/cov;return{liters,cost:liters*num(p.price)}}
+function costModel(){
+  const cats={};const addc=(c,pl,sp)=>{cats[c]=cats[c]||{pl:0,sp:0};cats[c].pl+=pl;cats[c].sp+=sp};
+  S.items.forEach(i=>{const v=num(i.qty||1)*num(i.price);addc(i.cat||"Overig",v,["besteld","binnen"].includes(i.status)?v:0)});
+  S.paints.forEach(p=>{const c=paintCalc(p).cost;if(c)addc("Verf & klussen",c,p.bought?c:0)});
+  S.sh.forEach(s=>{const v=num(s.qty||1)*num(s.price);addc("Smarthome",v,["besteld","klaar"].includes(s.status)?v:0)});
+  S.tasks.forEach(t=>{const v=num(t.cost);if(v)addc("Taken & diensten",v,t.done?v:0)});
+  let planned=0,spent=0;Object.values(cats).forEach(c=>{planned+=c.pl;spent+=c.sp});return{cats,planned,spent};
+}
+function itemTable(items,showRoom=true){
+  return `<div class="scroll"><table class="tbl"><tr><th>Item</th>${showRoom?"<th>Kamer</th>":""}<th>Status</th><th class="r">Bedrag</th></tr>${items.map(i=>`<tr><td><a href="#" data-edit-item="${i.id}">${esc(i.title)}</a>${i.link?` <a href="${esc(i.link)}" target="_blank" rel="noopener" class="small">winkel ↗</a>`:""}<div class="small muted">${esc(i.cat||"")}${num(i.qty)>1?` · ${num(i.qty)}×`:""}</div></td>${showRoom?`<td class="small">${esc(roomName(i.roomId))}</td>`:""}<td><select data-item-status="${i.id}" aria-label="Status" style="width:auto;padding:4px 6px;font-size:13px">${ITEM_STATUS.map(([k,l])=>`<option value="${k}" ${i.status===k?"selected":""}>${l}</option>`).join("")}</select></td><td class="r mono">${eur(num(i.qty||1)*num(i.price))}</td></tr>`).join("")}</table></div>`;
+}
+function viewCosts(){
+  const s=settings();const c=costModel();const rest=num(s.budget)-c.planned;
+  const toOrder=S.items.filter(i=>["bestellen","kiezen"].includes(i.status||"bestellen"));
+  const ordered=S.items.filter(i=>["besteld","binnen"].includes(i.status));
+  const ideas=S.items.filter(i=>i.status==="idee");
+  const openTasks=S.tasks.filter(t=>!t.done).length;
+  const maxCat=Math.max(1,...Object.values(c.cats).map(x=>x.pl));
+  return `<div class="stack"><div class="row between"><div><h1>Kosten & bestellen</h1><p class="muted">Alles wat gekocht, besteld en betaald moet worden op één plek.</p></div><button class="btn primary" data-act="newItem">Item toevoegen</button></div>
+  <div class="hero">
+   <div class="daybox"><div class="eyebrow">Budget</div><input type="number" id="set-budget" data-set="budget" value="${num(s.budget)||""}" placeholder="Vul je budget in" style="font-size:22px;font-weight:700;margin-top:4px"></div>
+   <div class="daybox"><div class="eyebrow">Begroot</div><div class="big num" style="font-size:32px">${eur(c.planned)}</div><div class="small muted">${s.budget?(rest>=0?`${eur(rest)} over`:`${eur(-rest)} boven budget`):"alle items, verf, smarthome en taken"}</div></div>
+   <div class="daybox"><div class="eyebrow">Uitgegeven</div><div class="big num" style="font-size:32px">${eur(c.spent)}</div><div class="small muted">besteld, binnen of afgevinkt</div></div>
+   <div class="daybox"><div class="eyebrow">Nog te regelen</div><div class="big num" style="font-size:32px">${toOrder.length+openTasks}</div><div class="small muted">${toOrder.length} te bestellen · ${openTasks} open taken</div></div>
+  </div>
+  <section class="card stack"><h2>Per categorie</h2>${Object.keys(c.cats).length?Object.entries(c.cats).sort((a,b)=>b[1].pl-a[1].pl).map(([k,v])=>`<div><div class="row between small"><b>${esc(k)}</b><span class="mono">${eur(v.sp)} / ${eur(v.pl)}</span></div><div class="bar" style="background:var(--soft)"><i style="width:${v.pl/maxCat*100}%;background:linear-gradient(90deg,var(--ok) ${v.pl?v.sp/v.pl*100:0}%,var(--tape) 0)"></i></div></div>`).join(""):`<p class="muted">Nog geen bedragen. Voeg items toe of vul bij verfkleuren de m² en prijs in.</p>`}
+   <div class="small muted"><span class="dot" style="background:var(--ok);width:10px;height:10px"></span> uitgegeven <span class="dot" style="background:var(--tape);width:10px;height:10px;margin-left:10px"></span> nog te besteden</div></section>
+  <section class="card stack"><div class="row between"><h2>Te bestellen</h2><span class="tape warn">${toOrder.length}</span></div>${toOrder.length?itemTable(toOrder):`<p class="muted small">Niets meer te bestellen.</p>`}</section>
+  <section class="card stack"><h2>Verf-boodschappenlijst</h2>
+   ${S.paints.length?`<div class="scroll"><table class="tbl"><tr><th>Kleur</th><th>Merk & code</th><th class="r">m²</th><th class="r">Liter</th><th class="r">Kosten</th><th>Gekocht</th></tr>${S.paints.map(p=>{const k=paintCalc(p);const used=paintUse(p.id);return `<tr><td><span class="row" style="gap:6px;flex-wrap:nowrap"><span class="dot" style="background:${esc(p.hex)}"></span><a href="#" data-edit-paint="${p.id}">${esc(p.name||p.hex)}</a></span><div class="small muted">${used.length?esc(used.join(", ")):"nog op geen muur"}</div></td><td class="mono small">${esc([p.brand,p.code,p.sheen].filter(Boolean).join(" · "))}</td><td class="r mono">${num(p.m2)||"–"}</td><td class="r mono">${k.liters?k.liters.toFixed(1):"–"}</td><td class="r mono">${k.cost?eur(k.cost):"–"}</td><td><input type="checkbox" data-paint-bought="${p.id}" ${p.bought?"checked":""} aria-label="Gekocht" style="width:20px;height:20px;accent-color:var(--ok)"></td></tr>`}).join("")}</table></div><p class="small muted">Liters = m² × lagen ÷ dekking (standaard 2 lagen, 9 m² per liter). Prijs per liter staat bij de kleur.</p>`:`<p class="muted">Nog geen kleuren. Die maak je in de 360°-viewer of bij een moodboard.</p>`}
+   <div><button class="btn sm" data-act="newPaint">Kleur toevoegen</button></div></section>
+  ${ordered.length?`<section class="card stack"><h2>Besteld & binnen</h2>${itemTable(ordered)}</section>`:""}
+  ${ideas.length?`<section class="card stack"><h2>Ideeën (nog niet begroot als keuze)</h2>${itemTable(ideas)}</section>`:""}
+  </div>`;
+}
+function paintUse(pid){const out=[];S.photos.forEach(p=>{const v=activeVar(p);(p.walls||[]).forEach(w=>{if((v.colors||{})[w.id]===pid)out.push(roomName(p.roomId)+": "+w.name)})});return out}
+
+/* ---------- Smarthome ---------- */
+function viewSmart(){
+  const chat=(S.chat.find(c=>c.id==="smarthome")||{}).messages||[];
+  const groups=SH_KINDS.map(k=>[k,S.sh.filter(s=>(s.kind||"Idee")===k)]);
+  const total=S.sh.reduce((a,s)=>a+num(s.qty||1)*num(s.price),0);
+  return `<div class="stack"><div class="row between"><div><h1>Smarthome</h1><p class="muted">Ideeën sparren en het plan maken: hardware, software en automatiseringen.</p></div><div class="row"><span class="tape num">${eur(total)} begroot</span><button class="btn primary" data-act="newSh">Toevoegen</button></div></div>
+  <div class="grid g2" style="align-items:start">
+   <div class="stack">${groups.map(([k,list])=>`<section class="card"><div class="row between"><h2>${esc(k)}</h2><span class="small muted">${list.length}</span></div>
+     ${list.length?list.map(s=>`<div class="task"><div class="t" data-edit-sh="${s.id}"><div class="tt"><b>${esc(s.title)}</b></div><div class="meta">${s.roomId?`<span class="tape">${esc(roomName(s.roomId))}</span>`:""}${s.protocol?`<span class="mono">${esc(s.protocol)}</span>`:""}${num(s.price)?`<span class="mono">${eur(num(s.qty||1)*num(s.price))}</span>`:""}${s.notes?`<span>${esc(s.notes.slice(0,90))}${s.notes.length>90?"…":""}</span>`:""}</div></div>
+     <select data-sh-status="${s.id}" aria-label="Status" style="width:auto;padding:4px 6px;font-size:13px">${SH_STATUS.map(([v,l])=>`<option value="${v}" ${s.status===v?"selected":""}>${l}</option>`).join("")}</select></div>`).join(""):`<p class="muted small">Nog niets.</p>`}</section>`).join("")}</div>
+   <section class="card stack"><div class="row between"><h2>Sparren met Claude</h2>${chat.length?`<button class="btn sm ghost" data-act="chatClear">Wis gesprek</button>`:""}</div>
+    ${sample?`<div class="chat" id="chatlog">${chat.length?chat.map(m=>`<div class="msg ${m.role==="user"?"u":"a"}">${esc(m.content)}</div>`).join(""):`<div class="muted small">Vraag bijvoorbeeld: “Ik wil met Home Assistant beginnen. Welke hardware heb ik nodig voor slimme verlichting in de woonkamer en hal, en wat kost dat ongeveer?”</div>`}<div class="msg a" id="chatlive" hidden></div></div>
+    <form class="addline" id="chatform"><textarea id="chatin" rows="2" placeholder="Stel je vraag of beschrijf je idee…" style="min-height:44px"></textarea><button class="btn primary" id="chatsend">Stuur</button></form>
+    ${chat.length?`<button class="btn sm" data-act="chatToPlan">Zet de voorstellen uit dit gesprek in het plan</button>`:""}
+    <p class="small muted">Het gesprek wordt gedeeld bewaard. Claude krijgt jullie huidige plan en kamers mee als context.</p>`:`<p class="muted">Sparren met Claude is in deze weergave niet beschikbaar. Open de app op claude.ai.</p>`}
+   </section></div></div>`;
+}
+
+/* ---------- Tips ---------- */
+let tipCat=lsGet("tipCat","Alle");
+function viewTips(){
+  const list=TIPS.filter(t=>tipCat==="Alle"||t.cat===tipCat);
+  const added=new Set(S.tasks.map(t=>t.fromTip).filter(Boolean));
+  return `<div class="stack"><div><h1>Tips</h1><p class="muted">Dingen die vaak vergeten worden. Met één tik zet je een tip als taak in de planning.</p></div>
+  <div class="chips">${["Alle",...TIP_CATS].map(c=>`<button class="chip ${tipCat===c?"on":""}" data-tc="${esc(c)}">${esc(c)}</button>`).join("")}</div>
+  <div class="grid g3">${list.map(t=>`<article class="card tip"><span class="eyebrow">${esc(t.cat)}</span><h3>${esc(t.t)}</h3><p class="small">${esc(t.b)}</p>
+   <div class="act">${t.task?(added.has(t.id)?`<span class="tape ok">Staat in de planning</span>`:`<button class="btn sm" data-tip="${t.id}">+ In planning${t.task.date?` (${esc(dfmt(t.task.date))})`:""}</button>`):`<span class="small muted">Naslag, geen taak</span>`}</div></article>`).join("")}</div></div>`;
+}
+
+/* ---------- modal & formulieren ---------- */
+function modal(html){const l=$("#layer");const m=document.createElement("div");m.className="modal";m.innerHTML=`<div class="sheet" role="dialog" aria-modal="true">${html}</div>`;l.appendChild(m);m.addEventListener("click",e=>{if(e.target===m)m.remove()});return m}
+function form(title,fields,init={},extraBtn){
+  return new Promise(res=>{
+    const f=fields.map(x=>{const v=init[x.k]??x.def??"";const id="f-"+x.k;let inp;
+      if(x.type==="select")inp=`<select id="${id}">${x.options.map(o=>{const[val,lab]=Array.isArray(o)?o:[o,o];return `<option value="${esc(val)}" ${String(v)===String(val)?"selected":""}>${esc(lab)}</option>`}).join("")}</select>`;
+      else if(x.type==="textarea")inp=`<textarea id="${id}">${esc(v)}</textarea>`;
+      else if(x.type==="color")inp=`<span class="row" style="flex-wrap:nowrap"><input type="color" id="${id}-c" value="${esc(hexToRgb(v)?v:"#cccccc")}" style="width:48px;height:38px;padding:0;border:1px solid var(--line);border-radius:8px;background:none"><input type="text" id="${id}" value="${esc(v)}" class="mono" placeholder="#RRGGBB"></span>`;
+      else inp=`<input type="${x.type||"text"}" id="${id}" value="${esc(v)}" ${x.ph?`placeholder="${esc(x.ph)}"`:""} ${x.type==="number"?'step="any" inputmode="decimal"':""}>`;
+      return `<label class="f ${x.full?"full":""}">${esc(x.label)}${inp}</label>`}).join("");
+    const m=modal(`<h2>${esc(title)}</h2><form class="fgrid" id="mform">${f}<div class="full row between" style="margin-top:6px"><span>${extraBtn?`<button type="button" class="btn ghost danger" id="mextra">${esc(extraBtn)}</button>`:""}</span><span class="row"><button type="button" class="btn" id="mcancel">Annuleren</button><button class="btn primary">Opslaan</button></span></div></form>`);
+    fields.filter(x=>x.type==="color").forEach(x=>{const c=$("#f-"+x.k+"-c",m),t=$("#f-"+x.k,m);c.oninput=()=>t.value=c.value.toUpperCase();t.oninput=()=>{if(hexToRgb(t.value))c.value=rgbToHex(...hexToRgb(t.value))}});
+    const done=v=>{m.remove();res(v)};
+    $("#mcancel",m).onclick=()=>done(null);
+    if(extraBtn)$("#mextra",m).onclick=()=>done({__extra:true});
+    $("#mform",m).onsubmit=e=>{e.preventDefault();const out={};fields.forEach(x=>{let v=$("#f-"+x.k,m).value;if(x.type==="number")v=v===""?"":num(v);out[x.k]=v});done(out)};
+    setTimeout(()=>{const first=$("input,textarea,select",m);first&&first.focus()},30);
+  })}
+function confirmBox(text,yes="Verwijderen"){return new Promise(res=>{const m=modal(`<h2>${esc(text)}</h2><div class="row" style="justify-content:flex-end"><button class="btn" id="cn">Annuleren</button><button class="btn primary" id="cy">${esc(yes)}</button></div>`);$("#cn",m).onclick=()=>{m.remove();res(false)};$("#cy",m).onclick=()=>{m.remove();res(true)}})}
+const roomOpts=()=>[["","— geen kamer —"],...sortRooms().map(r=>[r.id,r.name])];
+const taskFields=()=>[{k:"title",label:"Taak",full:true},{k:"phase",label:"Fase",type:"select",options:PHASES.map(p=>[p.id,p.name])},{k:"date",label:"Datum",type:"date"},{k:"roomId",label:"Kamer",type:"select",options:roomOpts()},{k:"cost",label:"Kosten (€)",type:"number"},{k:"notes",label:"Notities",type:"textarea",full:true}];
+const itemFields=()=>[{k:"title",label:"Wat",full:true},{k:"cat",label:"Categorie",type:"select",options:ITEM_CATS},{k:"roomId",label:"Kamer",type:"select",options:roomOpts()},{k:"qty",label:"Aantal",type:"number",def:1},{k:"price",label:"Prijs per stuk (€)",type:"number"},{k:"status",label:"Status",type:"select",options:ITEM_STATUS,def:"bestellen"},{k:"link",label:"Link naar winkel",type:"url",ph:"https://"},{k:"notes",label:"Notities",type:"textarea",full:true}];
+const paintFields=()=>[{k:"name",label:"Kleurnaam",ph:"bijv. Warm grijs"},{k:"hex",label:"Kleur",type:"color"},{k:"brand",label:"Merk",ph:"Flexa, Histor, Little Greene…"},{k:"code",label:"Kleurcode",ph:"zoals op de waaier"},{k:"sheen",label:"Glansgraad",type:"select",options:["mat","extra mat","zijdeglans","hoogglans",""]},{k:"price",label:"Prijs per liter (€)",type:"number"},{k:"m2",label:"Te schilderen m²",type:"number"},{k:"layers",label:"Lagen",type:"number",def:2},{k:"coverage",label:"Dekking m²/liter",type:"number",def:9},{k:"link",label:"Link",type:"url",ph:"https://"},{k:"notes",label:"Notities",type:"textarea",full:true}];
+const shFields=()=>[{k:"title",label:"Wat",full:true},{k:"kind",label:"Soort",type:"select",options:SH_KINDS},{k:"status",label:"Status",type:"select",options:SH_STATUS},{k:"roomId",label:"Kamer",type:"select",options:roomOpts()},{k:"protocol",label:"Protocol / platform",ph:"Zigbee, Matter, wifi…"},{k:"qty",label:"Aantal",type:"number",def:1},{k:"price",label:"Prijs per stuk (€)",type:"number"},{k:"link",label:"Link",type:"url",ph:"https://"},{k:"notes",label:"Notities",type:"textarea",full:true}];
+async function newPaint(init={}){const v=await form("Nieuwe kleur",paintFields(),{layers:2,coverage:9,...init});if(!v)return null;if(!hexToRgb(v.hex)){toast("Vul een geldige kleur in, zoals #A7B5A0.");return null}v.hex=rgbToHex(...hexToRgb(v.hex));return await safe(()=>add("paints",v))}
+async function editPaint(id){const p=byId("paints",id);const v=await form("Kleur bewerken",paintFields(),p,"Verwijderen");if(!v)return;if(v.__extra){if(await confirmBox(`Kleur “${p.name||p.hex}” verwijderen?`))await safe(()=>del("paints",id));return}if(hexToRgb(v.hex))v.hex=rgbToHex(...hexToRgb(v.hex));await safe(()=>upd("paints",id,v))}
+
+/* ---------- uploads ---------- */
+async function loadBitmap(file,w,h){
+  try{return await createImageBitmap(file,{resizeWidth:w,resizeHeight:h,resizeQuality:"high"})}catch(e){}
+  const url=URL.createObjectURL(file);try{const img=new Image();img.src=url;await img.decode();return img}finally{setTimeout(()=>URL.revokeObjectURL(url),1000)}
+}
+async function natSize(file){try{const b=await createImageBitmap(file);const s=[b.width,b.height];b.close&&b.close();return s}catch(e){const url=URL.createObjectURL(file);const img=new Image();img.src=url;await img.decode();URL.revokeObjectURL(url);return[img.naturalWidth,img.naturalHeight]}}
+async function toJpeg(src,w,h,q=.88){const c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(src,0,0,w,h);return await new Promise(r=>c.toBlob(r,"image/jpeg",q))}
+async function uploadPano(file,roomId){
+  const [nw,nh]=await natSize(file);
+  if(Math.abs(nw/nh-2)>.08)toast(`Let op: ${file.name} is geen 2:1-panorama (${nw}×${nh}). Hij wordt toch ingeladen.`,4000);
+  const W=Math.min(4096,nw-nw%2),H=W/2;
+  const bmp=await loadBitmap(file,W,H);
+  const full=await toJpeg(bmp,W,H,.9),thumb=await toJpeg(bmp,1024,512,.82);bmp.close&&bmp.close();
+  const a=await assets.upload(full),t=await assets.upload(thumb);
+  const name=file.name.replace(/\.[^.]+$/,"");
+  return await add("photos",{roomId,name,assetId:a.id,thumbId:t.id,w:W,h:H,walls:[],variants:[{id:"v1",name:"Variant A",colors:{}}],activeVariant:"v1"});
+}
+async function uploadImage(file,maxW=1800){const [nw,nh]=await natSize(file);const s=Math.min(1,maxW/nw);const w=Math.round(nw*s),h=Math.round(nh*s);const bmp=await loadBitmap(file,w,h);const b=await toJpeg(bmp,w,h,.86);bmp.close&&bmp.close();return await assets.upload(b)}
+async function withBusy(msg,fn){const t=document.createElement("div");t.className="toast";t.textContent=msg;document.body.appendChild(t);try{return await fn(t)}catch(e){console.error(e);toast(e&&e.code==="too_large"?"Bestand is te groot (max 20 MB).":"Uploaden lukte niet: "+(e&&e.message||"onbekende fout"))}finally{t.remove()}}
+
+/* ---------- events ---------- */
+document.addEventListener("click",async e=>{
+  const t=e.target.closest("[data-act],[data-toggle],[data-edit-task],[data-edit-item],[data-edit-paint],[data-edit-sh],[data-tip],[data-tc],[data-pf],[data-plan],[data-place],[data-open-pano],[data-del-mood],[data-pick]");
+  if(!t||!db)return;const d=t.dataset;
+  if(d.toggle!==undefined){const task=byId("tasks",d.toggle);if(task)await safe(()=>upd("tasks",task.id,{done:!task.done,doneBy:!task.done?meId:null,doneAt:!task.done?Date.now():null}));return}
+  if(d.editTask){e.preventDefault();const task=byId("tasks",d.editTask);const v=await form("Taak bewerken",taskFields(),task,"Verwijderen");if(!v)return;if(v.__extra){if(await confirmBox(`“${task.title}” verwijderen?`))await safe(()=>del("tasks",task.id));return}await safe(()=>upd("tasks",task.id,v));return}
+  if(d.editItem){e.preventDefault();const it=byId("items",d.editItem);const v=await form("Item bewerken",itemFields(),it,"Verwijderen");if(!v)return;if(v.__extra){if(await confirmBox(`“${it.title}” verwijderen?`))await safe(()=>del("items",it.id));return}await safe(()=>upd("items",it.id,v));return}
+  if(d.editPaint){e.preventDefault();return editPaint(d.editPaint)}
+  if(d.editSh){const s=byId("sh",d.editSh);const v=await form("Smarthome-onderdeel",shFields(),s,"Verwijderen");if(!v)return;if(v.__extra){if(await confirmBox(`“${s.title}” verwijderen?`))await safe(()=>del("sh",s.id));return}await safe(()=>upd("sh",s.id,v));return}
+  if(d.tip){const tip=TIPS.find(x=>x.id===d.tip);await safe(()=>add("tasks",{title:tip.t,phase:tip.task.phase,date:tip.task.date||"",notes:tip.b,fromTip:tip.id,done:false}));toast("In de planning gezet");return}
+  if(d.tc){tipCat=d.tc;lsSet("tipCat",tipCat);render();return}
+  if(d.pf){planFilter=d.pf;lsSet("planFilter",planFilter);render();return}
+  if(d.plan){planSel=d.plan;lsSet("planSel",planSel);render();return}
+  if(d.place!==undefined){placing=d.place||null;render();return}
+  if(d.openPano){openViewer(d.openPano);return}
+  if(d.delMood){e.stopPropagation();if(await confirmBox("Van het moodboard halen?"))await safe(()=>del("mood",d.delMood));return}
+  if(d.pick){openPicker(byId("mood",d.pick));return}
+  const a=d.act;
+  if(a==="newRoom"){const v=await form("Nieuwe kamer",[{k:"name",label:"Naam",full:true},{k:"style",label:"Stijl",ph:"bijv. Japandi, warm minimalistisch"},{k:"color",label:"Labelkleur (voor dozen)",type:"color",def:ROOM_COLORS[S.rooms.length%ROOM_COLORS.length]},{k:"notes",label:"Notities",type:"textarea",full:true}]);if(v&&v.name){const id=await safe(()=>add("rooms",{...v,order:S.rooms.length}));if(id)location.hash="#kamer-"+id}}
+  if(a==="editRoom"){const r=byId("rooms",d.id);const v=await form("Kamer bewerken",[{k:"name",label:"Naam",full:true},{k:"style",label:"Stijl"},{k:"color",label:"Labelkleur",type:"color"},{k:"order",label:"Volgorde",type:"number"},{k:"notes",label:"Notities",type:"textarea",full:true}],r);if(v)await safe(()=>upd("rooms",r.id,v))}
+  if(a==="delRoom"){const r=byId("rooms",d.id);if(await confirmBox(`Kamer “${r.name}” verwijderen? Foto's, moodboard en taken blijven bestaan maar zijn dan niet meer aan een kamer gekoppeld.`)){await safe(()=>del("rooms",r.id));location.hash="#kamers"}}
+  if(a==="exportRoom")exportRoom(d.id);
+  if(a==="moodLink"){const v=await form("Pinterest-pin of link",[{k:"href",label:"Link",type:"url",full:true,ph:"https://pin.it/…"},{k:"caption",label:"Omschrijving",full:true}]);if(v&&v.href)await safe(()=>add("mood",{roomId:d.id,type:"link",href:v.href,caption:v.caption}))}
+  if(a==="moodNote"){const v=await form("Notitie",[{k:"text",label:"Tekst",type:"textarea",full:true}]);if(v&&v.text)await safe(()=>add("mood",{roomId:d.id,type:"note",text:v.text}))}
+  if(a==="moodSwatch")pickPaintFor(d.id);
+  if(a==="newTask"){const v=await form("Nieuwe taak",taskFields(),{phase:"voor"});if(v&&v.title)await safe(()=>add("tasks",{...v,done:false}))}
+  if(a==="newItem"){const v=await form("Nieuw item",itemFields(),{roomId:d.room||"",status:"bestellen",qty:1});if(v&&v.title)await safe(()=>add("items",v))}
+  if(a==="newPaint")newPaint();
+  if(a==="newSh"){const v=await form("Smarthome toevoegen",shFields(),{kind:"Hardware",status:"idee",qty:1});if(v&&v.title)await safe(()=>add("sh",v))}
+  if(a==="delPlan"){if(await confirmBox("Deze plattegrond verwijderen?")){await safe(()=>del("plans",d.id));planSel=null}}
+  if(a==="chatClear"){if(await confirmBox("Het gesprek wissen?","Wissen"))await safe(()=>setDoc("chat","smarthome",{messages:[]}))}
+  if(a==="chatToPlan")chatToPlan(t);
+});
+document.addEventListener("change",async e=>{
+  const el=e.target;if(!db)return;
+  if(el.dataset.set){const s=settings();const v=el.dataset.set==="budget"?num(el.value):el.value;await safe(()=>setDoc("settings","main",{keyDate:s.keyDate,moveDate:s.moveDate,budget:s.budget,[el.dataset.set]:v}));return}
+  if(el.dataset.itemStatus){await safe(()=>upd("items",el.dataset.itemStatus,{status:el.value}));return}
+  if(el.dataset.shStatus){await safe(()=>upd("sh",el.dataset.shStatus,{status:el.value}));return}
+  if(el.dataset.paintBought){await safe(()=>upd("paints",el.dataset.paintBought,{bought:el.checked}));return}
+  if(el.id==="batchPano"&&el.files.length){const files=[...el.files];el.value="";
+    await withBusy("Foto's verwerken…",async tt=>{let i=0;for(const f of files){i++;tt.textContent=`Foto ${i} van ${files.length} verwerken en uploaden…`;
+      const rid_=await add("rooms",{name:f.name.replace(/\.[^.]+$/,""),style:"",color:ROOM_COLORS[(S.rooms.length+i-1)%ROOM_COLORS.length],order:S.rooms.length+i});await uploadPano(f,rid_)}
+      toast(`${files.length} foto${files.length>1?"'s":""} ingeladen`)});return}
+  if(el.dataset.panoRoom&&el.files.length){const f=el.files[0];el.value="";await withBusy("Foto verwerken en uploaden…",()=>uploadPano(f,el.dataset.panoRoom));return}
+  if(el.dataset.moodImg&&el.files.length){const files=[...el.files];el.value="";await withBusy("Afbeeldingen uploaden…",async()=>{for(const f of files){const a=await uploadImage(f);await add("mood",{roomId:el.dataset.moodImg,type:"image",assetId:a.id,caption:""})}});return}
+  if(el.id==="planUp"&&el.files.length){const f=el.files[0];el.value="";const v=await form("Naam van deze plattegrond",[{k:"name",label:"Naam",full:true,def:S.plans.length?"Verdieping "+(S.plans.length+1):"Begane grond"}]);if(!v)return;
+    await withBusy("Plattegrond uploaden…",async()=>{const a=await uploadImage(f,2400);planSel=await add("plans",{name:v.name,assetId:a.id});lsSet("planSel",planSel)});return}
+});
+document.addEventListener("submit",async e=>{
+  const f=e.target;if(!db)return;
+  if(f.dataset.addtaskPhase||f.dataset.addtaskRoom){e.preventDefault();const inp=f.querySelector("input");const title=inp.value.trim();if(!title)return;inp.value="";
+    await safe(()=>add("tasks",{title,phase:f.dataset.addtaskPhase||"na",roomId:f.dataset.addtaskRoom||"",date:"",done:false}))}
+  if(f.id==="chatform"){e.preventDefault();sendChat()}
+});
+document.addEventListener("keydown",e=>{if(e.target.id==="chatin"&&e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendChat()}});
+window.addEventListener("hashchange",()=>{placing=null;render();window.scrollTo(0,0)});
+
+async function pickPaintFor(roomId){
+  const m=modal(`<h2>Kleurstaal toevoegen</h2><div class="row" style="gap:8px">${S.paints.map(p=>`<button class="btn sm" data-pp="${p.id}"><span class="dot" style="background:${esc(p.hex)}"></span>${esc(p.name||p.hex)}</button>`).join("")||`<span class="muted small">Nog geen kleuren.</span>`}</div><div class="row between"><button class="btn" id="ppnew">Nieuwe kleur</button><button class="btn ghost" id="ppx">Sluiten</button></div>`);
+  m.addEventListener("click",async e=>{const b=e.target.closest("[data-pp]");if(b){m.remove();await safe(()=>add("mood",{roomId,type:"swatch",paintId:b.dataset.pp}))}});
+  $("#ppx",m).onclick=()=>m.remove();
+  $("#ppnew",m).onclick=async()=>{m.remove();const id=await newPaint();if(id)await safe(()=>add("mood",{roomId,type:"swatch",paintId:id}))};
+}
+
+/* ---------- kleur pakken uit moodboard-afbeelding ---------- */
+async function openPicker(m){
+  const lb=document.createElement("div");lb.className="lb";lb.innerHTML=`<div class="small">Tik op de afbeelding om een kleur te pakken</div><canvas></canvas><div class="row" style="justify-content:center"><span class="dot" id="pkdot" style="width:34px;height:34px"></span><span class="mono" id="pkhex">–</span><button class="btn primary" id="pkuse" disabled>Maak kleurstaal</button><button class="btn" id="pkx">Sluiten</button></div>`;
+  document.body.appendChild(lb);const cv=$("canvas",lb),ctx=cv.getContext("2d",{willReadFrequently:true});let hex=null;
+  const img=new Image();img.src=assetUrl(m.assetId);try{await img.decode()}catch(e){toast("Afbeelding laden lukte niet");lb.remove();return}
+  cv.width=img.naturalWidth;cv.height=img.naturalHeight;ctx.drawImage(img,0,0);
+  cv.onclick=e=>{const r=cv.getBoundingClientRect();const x=Math.floor((e.clientX-r.left)/r.width*cv.width),y=Math.floor((e.clientY-r.top)/r.height*cv.height);
+    try{const d=ctx.getImageData(Math.max(0,x-2),Math.max(0,y-2),5,5).data;let s=[0,0,0],n=0;for(let i=0;i<d.length;i+=4){s[0]+=d[i];s[1]+=d[i+1];s[2]+=d[i+2];n++}hex=rgbToHex(s[0]/n,s[1]/n,s[2]/n);$("#pkdot",lb).style.background=hex;$("#pkhex",lb).textContent=hex;$("#pkuse",lb).disabled=false}catch(err){toast("Kleur pakken lukt niet bij deze afbeelding")}};
+  $("#pkx",lb).onclick=()=>lb.remove();
+  $("#pkuse",lb).onclick=async()=>{lb.remove();const id=await newPaint({hex,name:"Uit moodboard"});if(id)await safe(()=>add("mood",{roomId:m.roomId,type:"swatch",paintId:id}))};
+}
+
+/* ---------- Smarthome-chat ---------- */
+let chatBusy=false;
+function houseContext(){
+  const rooms=sortRooms().map(r=>`- ${r.name}${r.style?` (stijl: ${r.style})`:""}`).join("\n")||"- (nog geen kamers ingevoerd)";
+  const plan=S.sh.map(s=>`- [${s.kind||"Idee"} · ${s.status||"idee"}] ${s.title}${s.roomId?` @ ${roomName(s.roomId)}`:""}${s.protocol?` (${s.protocol})`:""}${num(s.price)?` €${num(s.price)}`:""}${s.notes?` — ${s.notes}`:""}`).join("\n")||"- (nog leeg)";
+  return `Je bent een nuchtere smarthome-adviseur die in het Nederlands antwoordt. Context: een stel heeft een koophuis gekocht in Nederland, sleutel op ${dfmt(settings().keyDate)}, verhuizen op ${dfmt(settings().moveDate)}. Ze willen het huis stap voor stap slim maken (verlichting niet direct, eerst wonen). Geef concrete hardware- en softwareadviezen met indicatieve prijzen in euro's, benoem protocollen (Zigbee, Matter/Thread, wifi) en afhankelijkheden (nuldraad, OpenTherm, P1-poort). Zeg het eerlijk als iets onzeker is of afhangt van hun situatie, en stel vragen waar nodig. Houd antwoorden compact en scanbaar, zonder markdown-koppen.\n\nKamers:\n${rooms}\n\nHuidig smarthome-plan:\n${plan}`;
+}
+async function sendChat(){
+  if(chatBusy||!sample)return;const inp=$("#chatin");const q=inp.value.trim();if(!q)return;
+  const cur=((S.chat.find(c=>c.id==="smarthome")||{}).messages||[]).slice(-20);
+  const msgs=[...cur,{role:"user",content:q}];inp.value="";chatBusy=true;
+  await safe(()=>setDoc("chat","smarthome",{messages:msgs}));
+  const live=()=>$("#chatlive");
+  try{
+    const input=[{role:"user",content:houseContext()+"\n\n(Begin van het gesprek.)"},{role:"assistant",content:"Helder. Waar kan ik mee helpen?"},...msgs];
+    const {text}=await sample(input,{cache:false,onText:({text})=>{const l=live();if(l){l.hidden=false;l.textContent=text;const cl=$("#chatlog");if(cl)cl.scrollTop=cl.scrollHeight}}});
+    await safe(()=>setDoc("chat","smarthome",{messages:[...msgs,{role:"assistant",content:text}].slice(-40)}));
+  }catch(e){const l=live();if(l)l.hidden=true;toast(e.code==="not_granted"?"Je hebt geen toestemming gegeven om Claude te vragen.":e.code==="rate_limited"?"Even te veel vragen achter elkaar. Probeer het zo opnieuw.":"Claude kon niet antwoorden. Probeer het opnieuw.")}
+  finally{chatBusy=false;const l=live();if(l)l.hidden=true}
+}
+async function chatToPlan(btn){
+  const msgs=((S.chat.find(c=>c.id==="smarthome")||{}).messages||[]);if(!msgs.length||!sample)return;
+  btn.disabled=true;btn.textContent="Voorstellen ophalen…";
+  try{
+    const conv=msgs.map(m=>(m.role==="user"?"Wij: ":"Adviseur: ")+m.content).join("\n\n");
+    const rooms=sortRooms().map(r=>r.name);
+    const out=await sample.json(`Haal uit dit gesprek de concrete onderdelen voor een smarthome-plan. Antwoord met alleen een JSON-array van objecten met: "title" (kort, Nederlands), "kind" (een van ${JSON.stringify(SH_KINDS)}), "room" (een van ${JSON.stringify(rooms)} of ""), "protocol" (string of ""), "qty" (getal), "price" (indicatieve prijs per stuk in euro, getal of 0), "notes" (max 1 zin). Neem geen onderdelen op die al in het bestaande plan staan:\n${S.sh.map(s=>s.title).join("; ")||"(leeg)"}\n\nGesprek:\n${conv}`,{modelTier:"default"});
+    if(!Array.isArray(out)||!out.length){toast("Geen nieuwe onderdelen gevonden");return}
+    for(const o of out.slice(0,25)){const r=S.rooms.find(x=>x.name===o.room);await add("sh",{title:String(o.title||"").slice(0,120),kind:SH_KINDS.includes(o.kind)?o.kind:"Idee",roomId:r?r.id:"",protocol:String(o.protocol||""),qty:num(o.qty)||1,price:num(o.price),notes:String(o.notes||""),status:"idee"})}
+    toast(`${Math.min(25,out.length)} onderdelen toegevoegd als idee`);
+  }catch(e){toast("Dat lukte niet. Probeer het opnieuw.")}finally{btn.disabled=false;btn.textContent="Zet de voorstellen uit dit gesprek in het plan"}
+}
+
+/* ---------- 360°: geometrie ---------- */
+const TAU=Math.PI*2;
+function uvToDir(u,v){const phi=u*TAU,th=v*Math.PI;return[Math.cos(phi)*Math.sin(th),Math.cos(th),Math.sin(phi)*Math.sin(th)]}
+function dirToUv(d){const l=Math.hypot(d[0],d[1],d[2]);const y=d[1]/l;let phi=Math.atan2(d[2],d[0]);if(phi<0)phi+=TAU;return[phi/TAU,Math.acos(Math.max(-1,Math.min(1,y)))/Math.PI]}
+function slerpArc(a,b){const da=uvToDir(a[0],a[1]),dbb=uvToDir(b[0],b[1]);const dot=Math.max(-1,Math.min(1,da[0]*dbb[0]+da[1]*dbb[1]+da[2]*dbb[2]));const ang=Math.acos(dot);const n=Math.max(2,Math.ceil(ang/0.015));const out=[];const s=Math.sin(ang);
+  for(let i=0;i<n;i++){const t=i/n;let p;if(s<1e-6)p=da;else{const k0=Math.sin((1-t)*ang)/s,k1=Math.sin(t*ang)/s;p=[da[0]*k0+dbb[0]*k1,da[1]*k0+dbb[1]*k1,da[2]*k0+dbb[2]*k1]}out.push(p)}return out}
+function polyDirs(pts,closed){const out=[];const n=pts.length;for(let i=0;i<(closed?n:n-1);i++)out.push(...slerpArc(pts[i],pts[(i+1)%n]));if(!closed&&n)out.push(uvToDir(pts[n-1][0],pts[n-1][1]));return out}
+
+/* ---------- 360°: verfmotor ---------- */
+class Pano{
+  constructor(img,maxW){
+    const W=Math.min(img.naturalWidth||img.width,maxW);const H=Math.round(W/2);this.W=W;this.H=H;
+    this.canvas=document.createElement("canvas");this.canvas.width=W;this.canvas.height=H;
+    this.ctx=this.canvas.getContext("2d",{willReadFrequently:true});this.ctx.drawImage(img,0,0,W,H);
+    this.img=this.ctx.getImageData(0,0,W,H);this.orig=new Uint8ClampedArray(this.img.data);
+    this.label=new Uint8Array(W*H);this.lists=[];this.stats=[];this.mc=null;this.wallsKey="";
+  }
+  raster(pts,val){
+    const W=this.W,H=this.H;if(!this.mc){this.mc=document.createElement("canvas");this.mc.width=W;this.mc.height=H;this.mctx=this.mc.getContext("2d",{willReadFrequently:true})}
+    const ctx=this.mctx;ctx.clearRect(0,0,W,H);
+    const dirs=polyDirs(pts,true);dirs.push(dirs[0]);let off=0,prev=null;const P=[];
+    for(const d of dirs){const [u,v]=dirToUv(d);let x=u*W;if(prev!=null){const dd=x+off-prev;if(dd>W/2)off-=W;else if(dd<-W/2)off+=W}x+=off;P.push([x,v*H]);prev=x}
+    const drift=P[P.length-1][0]-P[0][0];
+    if(Math.abs(drift)>W/2){const avgY=P.reduce((a,p)=>a+p[1],0)/P.length;const py=avgY<H/2?0:H;P.push([P[P.length-1][0],py],[P[0][0],py])}
+    ctx.fillStyle="#fff";for(let k=-2;k<=2;k++){ctx.beginPath();P.forEach((p,i)=>i?ctx.lineTo(p[0]+k*W,p[1]):ctx.moveTo(p[0]+k*W,p[1]));ctx.closePath();ctx.fill()}
+    let minY=H,maxY=0;P.forEach(p=>{minY=Math.min(minY,p[1]);maxY=Math.max(maxY,p[1])});
+    const y0=Math.max(0,Math.floor(minY)-1),y1=Math.min(H,Math.ceil(maxY)+1);if(y1<=y0)return;
+    const d=ctx.getImageData(0,y0,W,y1-y0).data;const L=this.label;
+    for(let y=y0,i=3;y<y1;y++){const row=y*W;for(let x=0;x<W;x++,i+=4)if(d[i]>127)L[row+x]=val}
+  }
+  setWalls(walls){
+    const key=JSON.stringify(walls.map(w=>[w.pts,!!w.exclude]));if(key===this.wallsKey)return;this.wallsKey=key;
+    this.label.fill(0);walls.forEach((w,i)=>{if(!w.exclude&&w.pts.length>2)this.raster(w.pts,i+1)});walls.forEach(w=>{if(w.exclude&&w.pts.length>2)this.raster(w.pts,255)});
+    const n=walls.length,L=this.label,cnt=new Int32Array(256);for(let i=0;i<L.length;i++)cnt[L[i]]++;
+    this.lists=[];for(let k=1;k<=n&&k<255;k++)this.lists[k]=new Int32Array(cnt[k]);const pos=new Int32Array(256);
+    for(let i=0;i<L.length;i++){const k=L[i];if(k>0&&k<255&&k<=n)this.lists[k][pos[k]++]=i}
+    const o=this.orig;this.stats=[];
+    for(let k=1;k<=n&&k<255;k++){const li=this.lists[k];if(!li.length){this.stats[k]=null;continue}
+      const step=Math.max(1,Math.floor(li.length/30000));const hist=new Int32Array(256);let m=0;
+      for(let j=0;j<li.length;j+=step){const p=li[j]*4;hist[(o[p]*77+o[p+1]*150+o[p+2]*29)>>8]++;m++}
+      let acc=0,med=128;for(let b=0;b<256;b++){acc+=hist[b];if(acc>=m/2){med=b;break}}
+      let r=0,g=0,bb=0,c=0;const tol=med*.15+5;
+      for(let j=0;j<li.length;j+=step){const p=li[j]*4;const l=(o[p]*77+o[p+1]*150+o[p+2]*29)>>8;if(Math.abs(l-med)<=tol){r+=o[p];g+=o[p+1];bb+=o[p+2];c++}}
+      this.stats[k]={Lm:Math.max(med,8),r:r/c||med,g:g/c||med,b:bb/c||med}}
+  }
+  compose(colors,smart,strength=.95){
+    const o=this.orig,out=this.img.data;out.set(o);
+    colors.forEach((rgb,idx)=>{const k=idx+1;if(!rgb||!this.lists[k]||!this.stats[k])return;const li=this.lists[k],st=this.stats[k];const [pr,pg,pb]=rgb;const Lm=st.Lm,den=Lm+40;
+      for(let j=0;j<li.length;j++){const p=li[j]*4;const r=o[p],g=o[p+1],b=o[p+2];const l=(r*77+g*150+b*29)>>8;let s=l/Lm;if(s<.2)s=.2;else if(s>1.5)s=1.5;
+        let w=strength;if(smart){const dr=r-st.r,dg=g-st.g,db_=b-st.b;const dd=Math.sqrt(dr*dr+dg*dg+db_*db_)/den;if(dd>.9)continue;if(dd>.5)w*=(.9-dd)/.4}
+        out[p]=r+(pr*s-r)*w;out[p+1]=g+(pg*s-g)*w;out[p+2]=b+(pb*s-b)*w}});
+    this.ctx.putImageData(this.img,0,0);
+  }
+  original(){this.img.data.set(this.orig);this.ctx.putImageData(this.img,0,0)}
+  hit(u,v){const x=Math.min(this.W-1,Math.floor(((u%1)+1)%1*this.W)),y=Math.min(this.H-1,Math.max(0,Math.floor(v*this.H)));return this.label[y*this.W+x]}
+}
+function activeVar(p){const vs=p.variants&&p.variants.length?p.variants:[{id:"v1",name:"Variant A",colors:{}}];return vs.find(v=>v.id===p.activeVariant)||vs[0]}
+function colorsFor(p,v){return(p.walls||[]).map(w=>{if(w.exclude)return null;const pa=byId("paints",(v.colors||{})[w.id]);return pa?hexToRgb(pa.hex):null})}
+async function loadImg(src){const img=new Image();img.decoding="async";img.src=src;await img.decode();return img}
+
+/* ---------- 360°: viewer ---------- */
+let V=null;
+async function openViewer(photoId){
+  if(typeof THREE==="undefined"){toast("De 360°-viewer kon niet laden (geen verbinding met de bibliotheek).");return}
+  closeViewer();
+  const el=document.createElement("div");el.id="viewer";
+  el.innerHTML=`<div class="vt"><button class="btn sm" id="vclose" aria-label="Sluiten">← Terug</button><h3 id="vtitle"></h3><select id="vvar" aria-label="Variant"></select><button class="btn sm" id="vvarnew" title="Nieuwe variant op basis van deze">+ Variant</button></div>
+  <div class="stage" id="vstage"><div class="spin" id="vspin">360°-foto laden…</div></div><div class="vs" id="vsheet"></div>`;
+  document.body.appendChild(el);document.body.style.overflow="hidden";
+  V={id:photoId,el,mode:"look",draft:[],draftExclude:false,sel:null,smart:lsGet("smart",true),lon:0,lat:0,fov:80,dirty:true,lastColorsKey:""};
+  $("#vclose",el).onclick=closeViewer;
+  const p=byId("photos",photoId);$("#vtitle",el).textContent=`${roomName(p.roomId)} · ${p.name||""}`;
+  const stage=$("#vstage",el);
+  const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));stage.appendChild(renderer.domElement);
+  const maxTex=renderer.capabilities.maxTextureSize||4096;
+  const scene=new THREE.Scene();const cam=new THREE.PerspectiveCamera(V.fov,1,1,1100);
+  let img;try{img=await loadImg(assetUrl(p.assetId))}catch(e){$("#vspin",el).textContent="De foto kon niet geladen worden.";return}
+  if(!V||V.id!==photoId){renderer.dispose();return}
+  const pano=new Pano(img,Math.min(4096,maxTex));
+  const tex=new THREE.CanvasTexture(pano.canvas);tex.minFilter=THREE.LinearFilter;tex.generateMipmaps=false;
+  const geo=new THREE.SphereGeometry(500,96,64);geo.scale(-1,1,1);
+  scene.add(new THREE.Mesh(geo,new THREE.MeshBasicMaterial({map:tex})));
+  const overlay=new THREE.Group();scene.add(overlay);
+  Object.assign(V,{renderer,scene,cam,pano,tex,overlay,stage});
+  $("#vspin",el).remove();
+  const resize=()=>{const w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix();V.dirty=true};
+  V.resize=resize;window.addEventListener("resize",resize);resize();
+  bindStage();refreshViewer(true);
+  const loop=()=>{if(!V||V.renderer!==renderer)return;if(V.dirty){V.dirty=false;const phi=V.lon*Math.PI/180,th=(90-V.lat)*Math.PI/180;cam.fov=V.fov;cam.updateProjectionMatrix();cam.lookAt(Math.cos(phi)*Math.sin(th),Math.cos(th),Math.sin(phi)*Math.sin(th));renderer.render(scene,cam)}V.raf=requestAnimationFrame(loop)};loop();
+}
+function closeViewer(){if(!V)return;cancelAnimationFrame(V.raf);window.removeEventListener("resize",V.resize||(()=>{}));try{V.renderer&&V.renderer.dispose();V.tex&&V.tex.dispose()}catch(e){}V.el.remove();V=null;document.body.style.overflow=""}
+function bindStage(){
+  const st=V.stage;const ptrs=new Map();let start=null,pinch=null;
+  st.addEventListener("pointerdown",e=>{st.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(ptrs.size===1)start={x:e.clientX,y:e.clientY,lon:V.lon,lat:V.lat,t:Date.now(),moved:false};
+    if(ptrs.size===2){const [a,b]=[...ptrs.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y),fov:V.fov};start&&(start.moved=true)}});
+  st.addEventListener("pointermove",e=>{if(!ptrs.has(e.pointerId))return;ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(ptrs.size===2&&pinch){const [a,b]=[...ptrs.values()];const d=Math.hypot(a.x-b.x,a.y-b.y);V.fov=Math.max(25,Math.min(100,pinch.fov*pinch.d/d));V.dirty=true;return}
+    if(start&&ptrs.size===1){const dx=e.clientX-start.x,dy=e.clientY-start.y;if(Math.hypot(dx,dy)>6)start.moved=true;if(start.moved){const k=.1*V.fov/80;V.lon=start.lon-dx*k;V.lat=Math.max(-85,Math.min(85,start.lat+dy*k));V.dirty=true}}});
+  const up=e=>{if(!ptrs.has(e.pointerId))return;ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;
+    if(ptrs.size===0&&start){if(!start.moved&&Date.now()-start.t<600)onTap(e);start=null}};
+  st.addEventListener("pointerup",up);st.addEventListener("pointercancel",e=>{ptrs.delete(e.pointerId);start=null;pinch=null});
+  st.addEventListener("wheel",e=>{e.preventDefault();V.fov=Math.max(25,Math.min(100,V.fov+e.deltaY*.05));V.dirty=true},{passive:false});
+}
+function onTap(e){
+  const r=V.stage.getBoundingClientRect();const ndc=new THREE.Vector2((e.clientX-r.left)/r.width*2-1,-((e.clientY-r.top)/r.height)*2+1);
+  const rc=new THREE.Raycaster();rc.setFromCamera(ndc,V.cam);const d=rc.ray.direction;const [u,v]=dirToUv([d.x,d.y,d.z]);
+  if(V.mode==="draw"){V.draft.push([+u.toFixed(5),+v.toFixed(5)]);drawOverlay();renderSheet();return}
+  const k=V.pano.hit(u,v);const p=byId("photos",V.id);
+  if(k>0&&k<255&&p.walls[k-1]){V.sel=p.walls[k-1].id}else V.sel=null;drawOverlay();renderSheet();
+}
+function drawOverlay(){
+  const g=V.overlay;while(g.children.length){const c=g.children.pop();c.geometry.dispose();c.material.dispose()}
+  const p=byId("photos",V.id);if(!p)return;const R=480;
+  const line=(pts,closed,color,opacity=1)=>{const ds=polyDirs(pts,closed);if(closed)ds.push(ds[0]);const geo=new THREE.BufferGeometry().setFromPoints(ds.map(d=>new THREE.Vector3(d[0]*R,d[1]*R,d[2]*R)));const m=new THREE.LineBasicMaterial({color,transparent:true,opacity,depthTest:false});const l=new THREE.Line(geo,m);l.renderOrder=5;g.add(l)};
+  const dots=(pts,color)=>{const geo=new THREE.BufferGeometry().setFromPoints(pts.map(([u,v])=>{const d=uvToDir(u,v);return new THREE.Vector3(d[0]*R,d[1]*R,d[2]*R)}));const m=new THREE.PointsMaterial({color,size:10,sizeAttenuation:false,depthTest:false});const o=new THREE.Points(geo,m);o.renderOrder=6;g.add(o)};
+  const showAll=V.mode==="draw"||lsGet("showLines",false);
+  (p.walls||[]).forEach(w=>{if(w.id===V.sel){line(w.pts,true,0x7B9BF0);dots(w.pts,0xffffff)}else if(showAll)line(w.pts,true,w.exclude?0xE0A94D:0xffffff,.45)});
+  if(V.mode==="draw"&&V.draft.length){line(V.draft,false,0xFFD84D);dots(V.draft,0xFFD84D);if(V.draft.length>2)line([V.draft[V.draft.length-1],V.draft[0]],false,0xFFD84D,.4)}
+  V.dirty=true;
+}
+function refreshViewer(force){
+  if(!V||!V.pano)return;const p=byId("photos",V.id);if(!p){closeViewer();toast("Deze foto is verwijderd");return}
+  const v=activeVar(p);const walls=p.walls||[];
+  V.pano.setWalls(walls);
+  const cols=colorsFor(p,v);const key=JSON.stringify([V.pano.wallsKey,cols,V.smart,V.showOrig]);
+  if(force||key!==V.lastColorsKey){V.lastColorsKey=key;if(V.showOrig)V.pano.original();else V.pano.compose(cols,V.smart);V.tex.needsUpdate=true;V.dirty=true}
+  const sel=$("#vvar",V.el);sel.innerHTML=(p.variants||[]).map(x=>`<option value="${x.id}" ${x.id===v.id?"selected":""}>${esc(x.name)}</option>`).join("");
+  sel.onchange=()=>safe(()=>upd("photos",p.id,{activeVariant:sel.value}));
+  $("#vvarnew",V.el).onclick=async()=>{const vs=p.variants||[];const name="Variant "+String.fromCharCode(65+vs.length);const nv={id:rid(),name,colors:{...(v.colors||{})}};await safe(()=>upd("photos",p.id,{variants:[...vs,nv],activeVariant:nv.id}));toast(`${name} gemaakt (kopie van ${v.name})`)};
+  drawOverlay();renderSheet();
+}
+function renderSheet(){
+  const p=byId("photos",V.id);if(!p)return;const sh=$("#vsheet",V.el);const v=activeVar(p);const walls=p.walls||[];
+  const hint=$(".hint",V.el);if(hint)hint.remove();
+  if(V.mode==="draw"){
+    V.stage.classList.add("draw");
+    const h=document.createElement("div");h.className="hint";h.textContent=V.draftExclude?"Tik de hoeken van het raam, de deur of de radiator aan.":"Tik de hoeken van de muur aan: links-boven, rechts-boven, rechts-onder, links-onder. Slepen = rondkijken.";V.stage.appendChild(h);
+    sh.innerHTML=`<div class="row between"><b>${V.draftExclude?"Uitsparing tekenen":"Muur tekenen"} · ${V.draft.length} punt${V.draft.length===1?"":"en"}</b><div class="row"><button class="btn sm" id="dundo" ${V.draft.length?"":"disabled"}>Punt terug</button><button class="btn sm" id="dcancel">Annuleren</button><button class="btn sm primary" id="ddone" ${V.draft.length>2?"":"disabled"}>Klaar</button></div></div>
+    <div class="row"><label class="small muted" style="flex:1;min-width:180px">Naam<input type="text" id="dname" value="${esc(V.draftName||"")}" placeholder="${V.draftExclude?"bijv. Raam links":"bijv. Muur achter de bank"}" style="background:#1E2625;border-color:#2F3A38;color:#E8EEEC"></label><label class="small muted" style="width:110px">m² (optioneel)<input type="number" id="dm2" value="${esc(V.draftM2||"")}" step="any" inputmode="decimal" style="background:#1E2625;border-color:#2F3A38;color:#E8EEEC"></label></div>
+    <p class="small muted">Tip: zoom in (knijpen of scrollen) voor precieze hoeken. Volg bij een muur de hoeken van vloer en plafond. Kozijnen, deuren en radiatoren kun je daarna met een uitsparing uitsluiten.</p>`;
+    $("#dname",sh).oninput=e=>V.draftName=e.target.value;$("#dm2",sh).oninput=e=>V.draftM2=e.target.value;
+    $("#dundo",sh).onclick=()=>{V.draft.pop();drawOverlay();renderSheet()};
+    $("#dcancel",sh).onclick=()=>{V.mode="look";V.draft=[];V.draftName="";V.stage.classList.remove("draw");drawOverlay();renderSheet()};
+    $("#ddone",sh).onclick=async()=>{const name=($("#dname",sh).value||"").trim()||(V.draftExclude?"Uitsparing":"Muur "+(walls.filter(w=>!w.exclude).length+1));
+      const w={id:rid(),name,pts:V.draft,exclude:V.draftExclude,m2:num($("#dm2",sh).value)||""};
+      V.mode="look";V.draft=[];V.draftName="";V.draftM2="";V.stage.classList.remove("draw");V.sel=w.exclude?null:w.id;
+      await safe(()=>upd("photos",p.id,{walls:[...walls,w]}))};
+    return;
+  }
+  V.stage.classList.remove("draw");
+  const sw=walls.find(w=>w.id===V.sel);const curPaint=sw?(v.colors||{})[sw.id]:null;
+  const roomPaintIds=new Set(roomPaints(p.roomId).map(x=>x.id));
+  const pals=[...S.paints].sort((a,b)=>(roomPaintIds.has(b.id)-roomPaintIds.has(a.id))||(b.createdAt||0)-(a.createdAt||0));
+  sh.innerHTML=`<div class="row" style="gap:6px">${walls.map(w=>{const pa=byId("paints",(v.colors||{})[w.id]);return `<span class="wchip ${w.id===V.sel?"on":""}" data-w="${w.id}">${w.exclude?"⊘":`<span class="dot" style="background:${pa?esc(pa.hex):"transparent"};border-color:#5b6866"></span>`} ${esc(w.name)}</span>`}).join("")}
+    <button class="btn sm primary" id="vadd">+ Muur</button><button class="btn sm" id="vexcl" title="Raam, deur of radiator uitsluiten">+ Uitsparing</button></div>
+  ${walls.length===0?`<p class="small muted">Nog geen muren. Tik op <b>+ Muur</b> en daarna op de hoeken van een muur. Daarna kun je die muur een kleur geven.</p>`:""}
+  ${sw?(sw.exclude?`<div class="row between"><span class="small">Uitsparing <b>${esc(sw.name)}</b> wordt nooit geverfd.</span><button class="btn sm danger" id="wdel">Verwijderen</button></div>`:
+  `<div class="row between"><b>${esc(sw.name)}</b><div class="row"><button class="btn sm" id="wren">Naam / m²</button><button class="btn sm danger" id="wdel">Verwijderen</button></div></div>
+   <div class="pal"><button data-paint="" class="${curPaint?"":"on"}"><span class="sw" style="background:repeating-linear-gradient(45deg,#2a3331 0 6px,#1b2221 6px 12px)"></span>Origineel</button>
+   ${pals.map(pa=>`<button data-paint="${pa.id}" class="${curPaint===pa.id?"on":""}" title="${esc([pa.brand,pa.code].filter(Boolean).join(" "))}"><span class="sw" style="background:${esc(pa.hex)}"></span>${esc((pa.name||pa.hex).slice(0,14))}</button>`).join("")}
+   <button data-paint="__new"><span class="sw" style="display:grid;place-items:center;font-size:20px;background:#1E2625">+</span>Nieuwe kleur</button></div>
+   ${curPaint&&byId("paints",curPaint)?(()=>{const pa=byId("paints",curPaint);return `<div class="small muted mono">${esc([pa.brand,pa.code,pa.sheen].filter(Boolean).join(" · ")||"Nog geen merk/code")} · ${esc(pa.hex)} <a href="#" id="wpe" style="color:#9DB4F5">bewerk kleur</a></div>`})():""}`)
+  :walls.length?`<p class="small muted">Tik op een muur in de foto of op een naam hierboven om hem te kiezen.</p>`:""}
+  <div class="row between small"><label class="row" style="gap:6px"><input type="checkbox" id="vsmart" ${V.smart?"checked":""}> Slim maskeren <span class="muted">(stopcontacten, lijsten en schaduwen behouden)</span></label>
+   <label class="row" style="gap:6px"><input type="checkbox" id="vlines" ${lsGet("showLines",false)?"checked":""}> Lijnen tonen</label>
+   <button class="btn sm" id="vorig">Houd vast: origineel</button></div>`;
+  sh.querySelectorAll("[data-w]").forEach(b=>b.onclick=()=>{V.sel=b.dataset.w;drawOverlay();renderSheet()});
+  $("#vadd",sh).onclick=()=>{V.mode="draw";V.draftExclude=false;V.draft=[];V.sel=null;drawOverlay();renderSheet()};
+  $("#vexcl",sh).onclick=()=>{V.mode="draw";V.draftExclude=true;V.draft=[];V.sel=null;drawOverlay();renderSheet()};
+  $("#vsmart",sh).onchange=e=>{V.smart=e.target.checked;lsSet("smart",V.smart);refreshViewer()};
+  $("#vlines",sh).onchange=e=>{lsSet("showLines",e.target.checked);drawOverlay()};
+  const ob=$("#vorig",sh);const on=()=>{V.showOrig=true;refreshViewer()},off=()=>{if(V.showOrig){V.showOrig=false;refreshViewer()}};
+  ob.addEventListener("pointerdown",on);ob.addEventListener("pointerup",off);ob.addEventListener("pointerleave",off);ob.addEventListener("pointercancel",off);
+  if(sw){
+    $("#wdel",sh).onclick=async()=>{if(!await confirmBox(`“${sw.name}” verwijderen?`))return;const vs=(p.variants||[]).map(x=>{const c={...(x.colors||{})};delete c[sw.id];return{...x,colors:c}});V.sel=null;await safe(()=>upd("photos",p.id,{walls:walls.filter(w=>w.id!==sw.id),variants:vs}))};
+    const ren=$("#wren",sh);if(ren)ren.onclick=async()=>{const r=await form("Muur",[{k:"name",label:"Naam",full:true},{k:"m2",label:"Oppervlakte (m²)",type:"number"}],sw);if(r)await safe(()=>upd("photos",p.id,{walls:walls.map(w=>w.id===sw.id?{...w,...r}:w)}))};
+    const pe=$("#wpe",sh);if(pe)pe.onclick=e=>{e.preventDefault();editPaint(curPaint)};
+    sh.querySelectorAll("[data-paint]").forEach(b=>b.onclick=async()=>{let pid=b.dataset.paint;if(pid==="__new"){pid=await newPaint({m2:sw.m2||""});if(!pid)return}
+      const vs=(p.variants&&p.variants.length?p.variants:[{id:"v1",name:"Variant A",colors:{}}]).map(x=>x.id===v.id?{...x,colors:{...(x.colors||{}),[sw.id]:pid||null}}:x);
+      await safe(()=>upd("photos",p.id,{variants:vs,activeVariant:v.id}))});
+  }
+}
+
+/* ---------- export per kamer ---------- */
+async function exportRoom(roomId){
+  if(!downloads){toast("Downloaden is in deze weergave niet beschikbaar");return}
+  const r=byId("rooms",roomId);
+  await withBusy("Kamer-export maken…",async tt=>{
+    const ph=S.photos.filter(p=>p.roomId===roomId);const panos=[];
+    for(const p of ph){tt.textContent=`Foto “${p.name}” renderen…`;const img=await loadImg(assetUrl(p.assetId));const pano=new Pano(img,4096);pano.setWalls(p.walls||[]);const v=activeVar(p);pano.compose(colorsFor(p,v),lsGet("smart",true));
+      const c=document.createElement("canvas");c.width=Math.min(4096,pano.W);c.height=c.width/2;c.getContext("2d").drawImage(pano.canvas,0,0,c.width,c.height);
+      panos.push({name:p.name,variant:v.name,src:c.toDataURL("image/jpeg",.85),walls:(p.walls||[]).filter(w=>!w.exclude).map(w=>({name:w.name,m2:w.m2,paint:byId("paints",(v.colors||{})[w.id])}))})}
+    tt.textContent="Moodboard verzamelen…";const mood=[];
+    for(const m of S.mood.filter(m=>m.roomId===roomId)){if(m.type==="image"){try{const img=await loadImg(assetUrl(m.assetId));const s=Math.min(1,900/img.naturalWidth);const c=document.createElement("canvas");c.width=img.naturalWidth*s;c.height=img.naturalHeight*s;c.getContext("2d").drawImage(img,0,0,c.width,c.height);mood.push({type:"image",src:c.toDataURL("image/jpeg",.8),caption:m.caption})}catch(e){}}else mood.push({...m,paint:m.paintId?byId("paints",m.paintId):null})}
+    const tasks=S.tasks.filter(t=>t.roomId===roomId),items=S.items.filter(i=>i.roomId===roomId);
+    const html=exportHtml(r,panos,mood,tasks,items);
+    await downloads.save({filename:`${(r.name||"kamer").replace(/[^\w\- ]+/g,"")}.html`,data:html});toast("Export klaar");
+  });
+}
+function exportHtml(r,panos,mood,tasks,items){
+  const e=esc;const pr=p=>p?`<span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${e(p.hex)};vertical-align:-2px;border:1px solid #0002"></span> ${e(p.name||p.hex)} <code>${e([p.brand,p.code,p.sheen].filter(Boolean).join(" · "))}</code>`:"<i>origineel</i>";
+  return `<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${e(r.name)}</title>
+<style>body{font-family:system-ui,sans-serif;margin:0;padding:24px;max-width:1000px;margin:auto;color:#1c2423;background:#f4f6f4}h1{margin:0 0 4px}.pv{height:60vh;min-height:320px;border-radius:10px;overflow:hidden;background:#000;touch-action:none;cursor:grab}table{border-collapse:collapse;width:100%}td,th{padding:6px;border-bottom:1px solid #ddd;text-align:left}.mood{columns:3 200px;gap:10px}.mood>*{break-inside:avoid;margin-bottom:10px;background:#fff;border-radius:8px;overflow:hidden}.mood img{width:100%;display:block}.c{padding:8px}</style></head><body>
+<h1>${e(r.name)}</h1><p>${r.style?`Stijl: <b>${e(r.style)}</b>`:""} ${e(r.notes||"")}</p>
+${panos.map((p,i)=>`<h2>${e(p.name)} <small>(${e(p.variant)})</small></h2><div class="pv" id="pv${i}"></div><table><tr><th>Muur</th><th>Kleur</th><th>m²</th></tr>${p.walls.map(w=>`<tr><td>${e(w.name)}</td><td>${pr(w.paint)}</td><td>${e(w.m2||"")}</td></tr>`).join("")}</table>`).join("")}
+${mood.length?`<h2>Moodboard</h2><div class="mood">${mood.map(m=>m.type==="image"?`<div><img src="${m.src}">${m.caption?`<div class="c">${e(m.caption)}</div>`:""}</div>`:m.type==="link"?`<div class="c"><a href="${e(m.href)}">${e(m.caption||m.href)}</a></div>`:m.type==="swatch"&&m.paint?`<div><div style="height:70px;background:${e(m.paint.hex)}"></div><div class="c">${pr(m.paint)}</div></div>`:`<div class="c">${e(m.text||"")}</div>`).join("")}</div>`:""}
+${tasks.length?`<h2>Taken</h2><ul>${tasks.map(t=>`<li>${t.done?"✓ ":""}${e(t.title)}</li>`).join("")}</ul>`:""}
+${items.length?`<h2>Bestellijst</h2><table>${items.map(i=>`<tr><td>${e(i.title)}</td><td>${e(i.status||"")}</td><td>€ ${(Number(i.qty||1)*Number(i.price||0)).toFixed(2)}</td></tr>`).join("")}</table>`:""}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>
+<script>const P=${JSON.stringify(panos.map(p=>p.src))};P.forEach((src,i)=>{const el=document.getElementById("pv"+i);if(!window.THREE){el.innerHTML='<img src="'+src+'" style="width:100%">';return}const r=new THREE.WebGLRenderer();el.appendChild(r.domElement);const s=new THREE.Scene(),c=new THREE.PerspectiveCamera(80,1,1,1100);const g=new THREE.SphereGeometry(500,64,40);g.scale(-1,1,1);const t=new THREE.TextureLoader().load(src,()=>d());s.add(new THREE.Mesh(g,new THREE.MeshBasicMaterial({map:t})));let lon=0,lat=0,fov=80,st=null;function d(){const w=el.clientWidth,h=el.clientHeight;r.setSize(w,h);c.aspect=w/h;c.fov=fov;c.updateProjectionMatrix();const p=lon*Math.PI/180,th=(90-lat)*Math.PI/180;c.lookAt(Math.cos(p)*Math.sin(th),Math.cos(th),Math.sin(p)*Math.sin(th));r.render(s,c)}el.onpointerdown=e=>{st={x:e.clientX,y:e.clientY,lon,lat};el.setPointerCapture(e.pointerId)};el.onpointermove=e=>{if(!st)return;lon=st.lon-(e.clientX-st.x)*.1;lat=Math.max(-85,Math.min(85,st.lat+(e.clientY-st.y)*.1));d()};el.onpointerup=()=>st=null;el.onwheel=e=>{e.preventDefault();fov=Math.max(25,Math.min(100,fov+e.deltaY*.05));d()};addEventListener("resize",d);d()});<\/script></body></html>`;
+}
+
+/* ---------- opstart ---------- */
+(async()=>{
+  render();
+  if(!window.claude||!claude.use){$("#app").innerHTML=noDb();return}
+  const [d,a,u,dl,sm]=await Promise.all([claude.use("db"),claude.use("assets"),claude.use("user"),claude.use("downloads"),claude.use("sample")]);
+  db=d;assets=a;userCap=u;downloads=dl;sample=sm;canUpload=!!assets;
+  try{meId=u?await u.id():null}catch(e){}
+  if(!db){render();return}
+  const timer=setTimeout(()=>{if(!S.loaded.tasks)toast("De gegevens zijn nog niet bereikbaar. Even geduld…",4000)},10000);
+  COLS.forEach(c=>db.collection(c).onSnapshot(snap=>{S[c]=snap.docs.map(x=>({id:x.id,...x.data()}));if(!snap.metadata.fromCache){S.loaded[c]=true;if(c==="tasks")clearTimeout(timer)}render();if(V&&(c==="photos"||c==="paints"))refreshViewer()},err=>{console.error(c,err);if(err.code==="revoked"){db=null;render()}}));
+})();
+window.addEventListener("hashchange",()=>{if(V)closeViewer()});
+</script>
