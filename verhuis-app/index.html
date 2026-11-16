@@ -392,12 +392,12 @@ function viewRoom(id){
   <section class="stack"><div class="row between"><h2>360°-foto's</h2>${canUpload?`<label class="btn sm">Foto toevoegen<input type="file" accept="image/*" hidden data-pano-room="${id}"></label>`:""}</div>
     ${ph.length?`<div class="grid g3">${ph.map(p=>`<div class="card room" data-open-pano="${p.id}"><div class="ph" style="background-image:url('${assetUrl(p.thumbId)}')"><span class="tape solid">Open in 360°</span></div><div class="b"><b>${esc(p.name||"Foto")}</b><span class="small muted">${(p.walls||[]).filter(w=>!w.exclude).length} muren · ${(p.variants||[]).length} variant${(p.variants||[]).length===1?"":"en"}${p.w?` · ${p.w}×${p.h}`:""}</span>${(p.renders||[]).length?`<div class="rgal">${(p.renders||[]).map(r=>`<button class="rthumb" data-open-render="${p.id}|${r.id}" title="${esc(r.name)}" style="background-image:url('${assetUrl(r.thumbId)}')"><span>${esc(r.name)}</span></button>`).join("")}</div>`:""}
       ${canUpload?`<div class="row" style="gap:6px;margin-top:4px"><label class="btn sm primary">+ AI-render<input type="file" accept="image/*" hidden data-add-render="${p.id}"></label><label class="btn sm">Foto vervangen<input type="file" accept="image/*" hidden data-replace-pano="${p.id}"></label></div>`:""}</div></div>`).join("")}</div>
-    ${canUpload?`<details class="card small"><summary><b>Mooie kleurbeelden maken met ChatGPT</b> <span class="muted">(zo werkt het)</span></summary>
+    ${canUpload?`<details class="card small"><summary><b>Mooie kleurbeelden maken met ChatGPT of Gemini</b> <span class="muted">(zo werkt het)</span></summary>
       <ol style="margin:8px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:6px">
-        <li>Download de 360°-foto uit deze app of gebruik je origineel, en zet hem in ChatGPT.</li>
+        <li>Zet je originele 360°-foto in ChatGPT of Gemini (Nano Banana).</li>
         <li>Gebruik deze opdracht en vul de kleur in: <div class="row" style="margin-top:4px;align-items:flex-start"><code id="gptprompt" style="flex:1;min-width:0;white-space:pre-wrap;background:var(--soft);padding:8px;border-radius:6px">${esc(GPT_PROMPT)}</code><button class="btn sm" data-act="copyPrompt">Kopieer</button></div></li>
-        <li>Klik hier op <b>+ AI-render</b> bij de juiste foto en kies het beeld van ChatGPT. Je ziet het in 360°, en met <b>Voor / na</b> vergelijk je het met nu.</li>
-      </ol><p class="muted" style="margin-top:6px">ChatGPT kiest zelf de precieze tint. Neem de kleur die je mooi vindt over in "Jullie kleuren" met de echte kleurcode van het merk, en check hem met een proefpotje.</p></details>`:""}`:`<div class="empty">Nog geen 360°-foto van deze kamer.</div>`}
+        <li>Klik hier op <b>+ AI-render</b> bij de juiste foto en kies het gemaakte beeld. Je ziet het in 360°, en met <b>Voor / na</b> vergelijk je het met nu.</li>
+      </ol><p class="muted" style="margin-top:6px">Het AI-model kiest zelf de precieze tint. Lukt de 2:1-verhouding niet, vraag dan om "exact dezelfde afmetingen als de originele foto". Neem de kleur die je mooi vindt over in "Jullie kleuren" met de echte kleurcode van het merk, en check hem met een proefpotje.</p></details>`:""}`:`<div class="empty">Nog geen 360°-foto van deze kamer.</div>`}
   </section>
 
   <section class="card stack"><h2>Kleuren per muur</h2>
