@@ -155,6 +155,12 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:60
 #viewer .pal .sw{display:block;width:54px;height:40px;border-radius:6px;border:2px solid #2F3A38;margin-bottom:3px}
 #viewer .pal button.on .sw{border-color:#fff;box-shadow:0 0 0 2px #7B9BF0}
 #viewer .muted{color:#94A39F}
+.rgal{display:flex;gap:6px;overflow-x:auto;padding:2px 0}
+.rthumb{flex:none;width:120px;height:60px;border-radius:6px;border:1px solid var(--line);background-size:cover;background-position:center 30%;position:relative;cursor:pointer;padding:0}
+.rthumb span{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);color:#fff;font-size:11px;padding:2px 5px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:0 0 6px 6px}
+#viewer .rchip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:999px;border:1px solid #2F3A38;background:#1E2625;cursor:pointer;font-size:13px;font-weight:600;color:#E8EEEC}
+#viewer .rchip img{width:44px;height:22px;object-fit:cover;border-radius:999px}
+#viewer .rchip.on{border-color:#7B9BF0;box-shadow:0 0 0 2px #7B9BF0 inset}
 #viewer .spin{position:absolute;inset:0;display:grid;place-items:center;font-size:14px;color:#94A39F}
 #viewer .split{position:absolute;top:0;bottom:0;width:0;pointer-events:none}
 #viewer .split::before{content:"";position:absolute;top:0;bottom:0;left:-1px;width:2px;background:#fff;box-shadow:0 0 6px rgba(0,0,0,.5)}
@@ -381,7 +387,14 @@ function viewRoom(id){
   <div class="row"><button class="btn" data-act="editRoom" data-id="${id}">Bewerken</button><button class="btn" data-act="exportRoom" data-id="${id}" ${downloads?"":"disabled title='Downloaden is hier niet beschikbaar'"}>Download deze kamer</button></div></div>
 
   <section class="stack"><div class="row between"><h2>360°-foto's</h2>${canUpload?`<label class="btn sm">Foto toevoegen<input type="file" accept="image/*" hidden data-pano-room="${id}"></label>`:""}</div>
-    ${ph.length?`<div class="grid g3">${ph.map(p=>`<div class="card room" data-open-pano="${p.id}"><div class="ph" style="background-image:url('${assetUrl(p.thumbId)}')"><span class="tape solid">Open in 360°</span></div><div class="b"><b>${esc(p.name||"Foto")}</b><span class="small muted">${(p.walls||[]).filter(w=>!w.exclude).length} muren · ${(p.variants||[]).length} variant${(p.variants||[]).length===1?"":"en"}${p.w?` · ${p.w}×${p.h}`:""}</span>${canUpload?`<label class="btn sm" style="align-self:flex-start;margin-top:4px">Foto vervangen (muren blijven)<input type="file" accept="image/*" hidden data-replace-pano="${p.id}"></label>`:""}</div></div>`).join("")}</div>`:`<div class="empty">Nog geen 360°-foto van deze kamer.</div>`}
+    ${ph.length?`<div class="grid g3">${ph.map(p=>`<div class="card room" data-open-pano="${p.id}"><div class="ph" style="background-image:url('${assetUrl(p.thumbId)}')"><span class="tape solid">Open in 360°</span></div><div class="b"><b>${esc(p.name||"Foto")}</b><span class="small muted">${(p.walls||[]).filter(w=>!w.exclude).length} muren · ${(p.variants||[]).length} variant${(p.variants||[]).length===1?"":"en"}${p.w?` · ${p.w}×${p.h}`:""}</span>${(p.renders||[]).length?`<div class="rgal">${(p.renders||[]).map(r=>`<button class="rthumb" data-open-render="${p.id}|${r.id}" title="${esc(r.name)}" style="background-image:url('${assetUrl(r.thumbId)}')"><span>${esc(r.name)}</span></button>`).join("")}</div>`:""}
+      ${canUpload?`<div class="row" style="gap:6px;margin-top:4px"><label class="btn sm primary">+ AI-render<input type="file" accept="image/*" hidden data-add-render="${p.id}"></label><label class="btn sm">Foto vervangen<input type="file" accept="image/*" hidden data-replace-pano="${p.id}"></label></div>`:""}</div></div>`).join("")}</div>
+    ${canUpload?`<details class="card small"><summary><b>Mooie kleurbeelden maken met ChatGPT</b> <span class="muted">(zo werkt het)</span></summary>
+      <ol style="margin:8px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:6px">
+        <li>Download de 360°-foto uit deze app of gebruik je origineel, en zet hem in ChatGPT.</li>
+        <li>Gebruik deze opdracht en vul de kleur in: <div class="row" style="margin-top:4px;align-items:flex-start"><code id="gptprompt" style="flex:1;min-width:0;white-space:pre-wrap;background:var(--soft);padding:8px;border-radius:6px">${esc(GPT_PROMPT)}</code><button class="btn sm" data-act="copyPrompt">Kopieer</button></div></li>
+        <li>Klik hier op <b>+ AI-render</b> bij de juiste foto en kies het beeld van ChatGPT. Je ziet het in 360°, en met <b>Voor / na</b> vergelijk je het met nu.</li>
+      </ol><p class="muted" style="margin-top:6px">ChatGPT kiest zelf de precieze tint. Neem de kleur die je mooi vindt over in "Jullie kleuren" met de echte kleurcode van het merk, en check hem met een proefpotje.</p></details>`:""}`:`<div class="empty">Nog geen 360°-foto van deze kamer.</div>`}
   </section>
 
   <section class="card stack"><h2>Kleuren per muur</h2>
@@ -410,6 +423,7 @@ function moodItem(m){
   return `<div class="mi"><div class="cap" style="font-size:15px;white-space:pre-wrap">${esc(m.text)}</div>${x}</div>`;
 }
 
+const GPT_PROMPT="Dit is een 360°-panorama (equirectangulair, verhouding 2:1). Verf alleen de muren in de kleur [KLEUR, bijv. warm taupe]. Laat plafond, plinten, deuren, kozijnen, ramen, stopcontacten, schakelaars en alle meubels precies zoals ze zijn. Behoud exact dezelfde compositie, perspectief en afmetingen, en zorg dat linker- en rechterrand naadloos op elkaar aansluiten. Lever het resultaat op als 2:1-afbeelding.";
 /* ---------- Plattegrond ---------- */
 let planSel=lsGet("planSel",null),placing=null;
 function viewPlan(){
@@ -556,6 +570,16 @@ async function processPano(file){
   const a=await assets.upload(full),t=await assets.upload(thumb);
   return{assetId:a.id,thumbId:t.id,w:W,h:H};
 }
+async function addRender(photoId,file){
+  const ph=byId("photos",photoId);if(!ph)return;
+  let nw,nh;try{[nw,nh]=await natSize(file)}catch(e){toast("Dit bestand kan ik niet lezen.");return}
+  if(Math.abs(nw/nh-2)>.04){toast(`Dit beeld is ${nw}×${nh} en geen 2:1-panorama. Vraag ChatGPT om exact dezelfde verhouding (2:1) als het origineel.`,6000);return}
+  const v=await form("AI-render toevoegen",[{k:"name",label:"Naam",full:true,ph:"bijv. Warm taupe"},{k:"hex",label:"Kleur (ongeveer)",type:"color",def:"#9B7B6A"},{k:"notes",label:"Notitie of gebruikte opdracht",type:"textarea",full:true}],{name:file.name.replace(/\.[^.]+$/,"")});
+  if(!v)return;
+  await withBusy("AI-render uploaden…",async()=>{const r=await processPano(file);const item={id:rid(),name:v.name||"AI-render",hex:hexToRgb(v.hex)?rgbToHex(...hexToRgb(v.hex)):"",notes:v.notes||"",assetId:r.assetId,thumbId:r.thumbId,w:r.w,h:r.h,createdAt:Date.now()};
+    const cur=byId("photos",photoId);await upd("photos",photoId,{renders:[...(cur.renders||[]),item]});toast("AI-render toegevoegd");
+    if(V&&V.id===photoId)showRender(item.id)});
+}
 async function uploadPano(file,roomId){const r=await processPano(file);const name=file.name.replace(/\.[^.]+$/,"");
   return await add("photos",{roomId,name,...r,walls:[],variants:[{id:"v1",name:"Variant A",colors:{}}],activeVariant:"v1",nadir:0});
 }
@@ -564,7 +588,8 @@ async function withBusy(msg,fn){const t=document.createElement("div");t.classNam
 
 /* ---------- events ---------- */
 document.addEventListener("click",async e=>{
-  const t=e.target.closest("[data-act],[data-toggle],[data-edit-task],[data-edit-item],[data-edit-paint],[data-edit-sh],[data-tip],[data-tc],[data-pf],[data-plan],[data-place],[data-open-pano],[data-del-mood],[data-pick]");
+  if(e.target.closest("label")&&e.target.closest("[data-open-pano]"))return;
+  const t=e.target.closest("[data-open-render],[data-act],[data-toggle],[data-edit-task],[data-edit-item],[data-edit-paint],[data-edit-sh],[data-tip],[data-tc],[data-pf],[data-plan],[data-place],[data-open-pano],[data-del-mood],[data-pick]");
   if(!t||!db)return;if(e.target.closest("label")&&t.dataset.openPano)return;const d=t.dataset;
   if(d.toggle!==undefined){const task=byId("tasks",d.toggle);if(task)await safe(()=>upd("tasks",task.id,{done:!task.done,doneBy:!task.done?meId:null,doneAt:!task.done?Date.now():null}));return}
   if(d.editTask){e.preventDefault();const task=byId("tasks",d.editTask);const v=await form("Taak bewerken",taskFields(),task,"Verwijderen");if(!v)return;if(v.__extra){if(await confirmBox(`“${task.title}” verwijderen?`))await safe(()=>del("tasks",task.id));return}await safe(()=>upd("tasks",task.id,v));return}
@@ -577,6 +602,7 @@ document.addEventListener("click",async e=>{
   if(d.plan){planSel=d.plan;lsSet("planSel",planSel);render();return}
   if(d.place!==undefined){placing=d.place||null;render();return}
   if(d.openPano){openViewer(d.openPano);return}
+  if(d.openRender){e.stopPropagation();const [pid,rid_]=d.openRender.split("|");openViewer(pid,{render:rid_});return}
   if(d.delMood){e.stopPropagation();if(await confirmBox("Van het moodboard halen?"))await safe(()=>del("mood",d.delMood));return}
   if(d.pick){openPicker(byId("mood",d.pick));return}
   const a=d.act;
@@ -594,6 +620,7 @@ document.addEventListener("click",async e=>{
   if(a==="delPlan"){if(await confirmBox("Deze plattegrond verwijderen?")){await safe(()=>del("plans",d.id));planSel=null}}
   if(a==="chatClear"){if(await confirmBox("Het gesprek wissen?","Wissen"))await safe(()=>setDoc("chat","smarthome",{messages:[]}))}
   if(a==="chatToPlan")chatToPlan(t);
+  if(a==="copyPrompt"){try{await navigator.clipboard.writeText(GPT_PROMPT);toast("Opdracht gekopieerd")}catch(err){const r=document.createRange();r.selectNodeContents($("#gptprompt"));const sel=getSelection();sel.removeAllRanges();sel.addRange(r);toast("Selecteer en kopieer de tekst")}}
 });
 document.addEventListener("change",async e=>{
   const el=e.target;if(!db)return;
@@ -605,6 +632,7 @@ document.addEventListener("change",async e=>{
     await withBusy("Foto's verwerken…",async tt=>{let i=0;for(const f of files){i++;tt.textContent=`Foto ${i} van ${files.length} verwerken en uploaden…`;
       const rid_=await add("rooms",{name:f.name.replace(/\.[^.]+$/,""),style:"",color:ROOM_COLORS[(S.rooms.length+i-1)%ROOM_COLORS.length],order:S.rooms.length+i});await uploadPano(f,rid_)}
       toast(`${files.length} foto${files.length>1?"'s":""} ingeladen`)});return}
+  if(el.dataset.addRender&&el.files.length){const f=el.files[0];el.value="";await addRender(el.dataset.addRender,f);return}
   if(el.dataset.replacePano&&el.files.length){const f=el.files[0];el.value="";await withBusy("Nieuwe versie verwerken en uploaden…",async()=>{const r=await processPano(f);await upd("photos",el.dataset.replacePano,r);toast("Foto vervangen. De muren staan er nog.")});return}
   if(el.dataset.panoRoom&&el.files.length){const f=el.files[0];el.value="";await withBusy("Foto verwerken en uploaden…",()=>uploadPano(f,el.dataset.panoRoom));return}
   if(el.dataset.moodImg&&el.files.length){const files=[...el.files];el.value="";await withBusy("Afbeeldingen uploaden…",async()=>{for(const f of files){const a=await uploadImage(f);await add("mood",{roomId:el.dataset.moodImg,type:"image",assetId:a.id,caption:""})}});return}
@@ -892,6 +920,7 @@ async function openViewer(photoId,opts={}){
   const resize=()=>{const w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix();V.dirty=true};
   V.resize=resize;window.addEventListener("resize",resize);resize();try{V.ro=new ResizeObserver(()=>resize());V.ro.observe(stage)}catch(e){}
   bindStage();await loadMasksFor(p);if(!V||V.renderer!==renderer)return;refreshViewer(true);
+  {const rs=p.renders||[];const want=opts.render||(opts.render===undefined&&rs.length&&lsGet("preferRender",true)?rs[rs.length-1].id:null);if(want)showRender(want)}
   const loop=()=>{if(!V||V.renderer!==renderer)return;if(V.dirty){V.dirty=false;const phi=V.lon*Math.PI/180,th=(90-V.lat)*Math.PI/180;cam.fov=V.fov;cam.updateProjectionMatrix();cam.lookAt(Math.cos(phi)*Math.sin(th),Math.cos(th),Math.sin(phi)*Math.sin(th));
     if(V.compare&&V.mesh2){const w=stage.clientWidth,h=stage.clientHeight,sx=Math.round(w*V.split);renderer.setScissorTest(true);
       V.mesh.visible=false;V.mesh2.visible=true;renderer.setScissor(0,0,sx,h);renderer.setViewport(0,0,w,h);renderer.render(scene,cam);
@@ -910,7 +939,17 @@ function setCompare(on){
   }else if(V.mesh2){V.scene.remove(V.mesh2);V.mesh2.material.dispose();V.tex2.dispose();V.mesh2=null;V.tex2=null;V.pano.dropOrigCanvas()}
   V.dirty=true;
 }
-function closeViewer(){if(!V)return;cancelAnimationFrame(V.raf);try{V.ro&&V.ro.disconnect()}catch(e){}window.removeEventListener("resize",V.resize||(()=>{}));try{V.renderer&&V.renderer.dispose();V.tex&&V.tex.dispose();V.tex2&&V.tex2.dispose()}catch(e){}V.el.remove();V=null;document.body.style.overflow=""}
+async function showRender(id){
+  if(!V||!V.pano)return;const p=byId("photos",V.id);const r=(p.renders||[]).find(x=>x.id===id);
+  if(!r){V.renderId=null;V.mesh.material.map=V.tex;V.mesh.material.needsUpdate=true;V.dirty=true;renderSheet();return}
+  V.renderId=id;V.mode="look";V.sel=null;V.preview=null;showMaskOverlay(null);renderSheet();
+  if(!V.rcache)V.rcache={};
+  if(!V.rcache[id]){const pid=V.id;let img;try{img=await loadImg(assetUrl(r.assetId))}catch(e){toast("De AI-render kon niet geladen worden.");return}
+    if(!V||V.id!==pid)return;const rp=new Pano(img,V.pano.W);rp.setNadir(p.nadir||0);rp.original();const t=new THREE.CanvasTexture(rp.canvas);t.minFilter=THREE.LinearFilter;t.generateMipmaps=false;V.rcache[id]=t}
+  if(V.renderId!==id)return;V.mesh.material.map=V.rcache[id];V.mesh.material.needsUpdate=true;V.dirty=true;drawOverlay();renderSheet();
+}
+function showPaint(){if(!V)return;V.renderId=null;V.mesh.material.map=V.tex;V.mesh.material.needsUpdate=true;V.dirty=true;drawOverlay();renderSheet()}
+function closeViewer(){if(!V)return;try{Object.values(V.rcache||{}).forEach(t=>t.dispose())}catch(e){}cancelAnimationFrame(V.raf);try{V.ro&&V.ro.disconnect()}catch(e){}window.removeEventListener("resize",V.resize||(()=>{}));try{V.renderer&&V.renderer.dispose();V.tex&&V.tex.dispose();V.tex2&&V.tex2.dispose()}catch(e){}V.el.remove();V=null;document.body.style.overflow=""}
 function bindStage(){
   const st=V.stage;const ptrs=new Map();let start=null,pinch=null;
   st.addEventListener("pointerdown",e=>{if(e.target.closest(".knob"))return;st.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
@@ -937,6 +976,7 @@ function onTap(e){
   const p=byId("photos",V.id);
   const hitLink=(p.links||[]).find(l=>{const d=uvToDir(l.u,l.v);const q=new THREE.Vector3(d[0],d[1],d[2]).project(V.cam);if(q.z>1)return false;const x=(q.x+1)/2*r.width,y=(1-q.y)/2*r.height;return Math.abs(x-(e.clientX-r.left))<95&&Math.abs(y-(e.clientY-r.top))<32});
   if(hitLink){goThrough(hitLink);return}
+  if(V.renderId)return;
   const k=V.pano.hit(u,v);
   if(k>0&&k<255&&p.walls[k-1]){selectWall(p.walls[k-1].id)}else{V.sel=null;V.preview=null;refreshCompose();drawOverlay();renderSheet()}
 }
@@ -1124,6 +1164,19 @@ function renderSheet(){
       V.mode="look";V.linkDraft=null;await safe(()=>upd("photos",p.id,{links:[...(p.links||[]),l]}));toast("Doorgang opgeslagen. Tik erop om erheen te gaan.")};
     return;
   }
+  const rs=p.renders||[];
+  const rbar=`<div class="row" style="gap:6px"><span class="small muted">Weergave:</span><button class="rchip ${V.renderId?"":"on"}" id="vpaint"><img src="${assetUrl(p.thumbId)}" alt="">Verf-preview</button>${rs.map(r=>`<button class="rchip ${V.renderId===r.id?"on":""}" data-rsel="${r.id}"><img src="${assetUrl(r.thumbId)}" alt="">${r.hex?`<span class="dot" style="background:${esc(r.hex)};width:10px;height:10px"></span>`:""}${esc(r.name)}</button>`).join("")}${assets?`<label class="btn sm">+ AI-render<input type="file" accept="image/*" hidden id="vaddr"></label>`:""}</div>`;
+  const bindRbar=()=>{$("#vpaint",sh).onclick=()=>{lsSet("preferRender",false);showPaint()};sh.querySelectorAll("[data-rsel]").forEach(b=>b.onclick=()=>{lsSet("preferRender",true);showRender(b.dataset.rsel)});const ar=$("#vaddr",sh);if(ar)ar.onchange=async()=>{const f=ar.files[0];ar.value="";if(f)await addRender(p.id,f)}};
+  if(V.renderId){const r=rs.find(x=>x.id===V.renderId);
+    sh.innerHTML=rbar+(r?`<div class="wallhead"><span class="bigsw" style="background:${r.hex?esc(r.hex):"#2F3A38"}"></span><div style="flex:1;min-width:0"><div class="eyebrow" style="color:#94A39F">AI-render</div><div class="wn">${esc(r.name)}</div><div class="small muted">${r.notes?esc(r.notes):"Gebruik Voor / na om te vergelijken met hoe het nu is."}</div></div>
+      <div class="row" style="gap:6px">${r.hex?`<button class="btn sm" id="rtopaint">Kleur bewaren</button>`:""}<button class="btn sm" id="redit">Bewerken</button><button class="btn sm danger" id="rdel" aria-label="Render verwijderen">✕</button></div></div>
+      <p class="small muted">Dit beeld is opnieuw getekend door een AI. Kleuren zijn een benadering, en kleine details kunnen afwijken van de echte kamer. Doorgangen werken gewoon.</p>`:"");
+    bindRbar();
+    const rd=$("#rdel",sh);if(rd)rd.onclick=async()=>{if(!await confirmBox(`AI-render “${r.name}” verwijderen?`))return;await safe(()=>upd("photos",p.id,{renders:rs.filter(x=>x.id!==r.id)}));showPaint()};
+    const re_=$("#redit",sh);if(re_)re_.onclick=async()=>{const v=await form("AI-render",[{k:"name",label:"Naam",full:true},{k:"hex",label:"Kleur (ongeveer)",type:"color"},{k:"notes",label:"Notitie",type:"textarea",full:true}],r);if(v)await safe(()=>upd("photos",p.id,{renders:rs.map(x=>x.id===r.id?{...x,...v}:x)}))};
+    const rp=$("#rtopaint",sh);if(rp)rp.onclick=()=>newPaint({hex:r.hex,name:r.name});
+    return;
+  }
   /* ---- kijkmodus ---- */
   const sw=walls.find(w=>w.id===V.sel);const curPaint=sw?(v.colors||{})[sw.id]:null;const cp=curPaint?byId("paints",curPaint):null;
   const roomPaintIds=new Set(roomPaints(p.roomId).map(x=>x.id));
@@ -1150,7 +1203,7 @@ function renderSheet(){
   }else{
     panel=`<p class="small muted">Nog geen muren. Tik op <b>+ Muur</b> en daarna op de 4 hoeken van een muur. De app haalt zelf schilderijen, planten en meubels eruit.</p>`;
   }
-  sh.innerHTML=`<div class="row" style="gap:6px">${walls.filter(w=>w.id!=="logo").map(w=>{const pa=byId("paints",(v.colors||{})[w.id]);return `<span class="wchip ${w.id===V.sel?"on":""}" data-w="${w.id}">${w.exclude?"⊘":`<span class="dot" style="background:${pa?esc(pa.hex):"transparent"};border-color:#5b6866"></span>`} ${esc(w.name)}</span>`}).join("")}
+  sh.innerHTML=rbar+`<div class="row" style="gap:6px">${walls.filter(w=>w.id!=="logo").map(w=>{const pa=byId("paints",(v.colors||{})[w.id]);return `<span class="wchip ${w.id===V.sel?"on":""}" data-w="${w.id}">${w.exclude?"⊘":`<span class="dot" style="background:${pa?esc(pa.hex):"transparent"};border-color:#5b6866"></span>`} ${esc(w.name)}</span>`}).join("")}
     <button class="btn sm primary" id="vadd">+ Muur</button></div>
   ${panel}
   <details class="more" ${lsGet("moreOpen",false)?"open":""}><summary>Meer: hoeken tekenen, uitsparingen, doorgangen, instellingen</summary>
@@ -1162,7 +1215,7 @@ function renderSheet(){
    <div class="row small"><label class="row" style="gap:6px"><input type="checkbox" id="vnadir" ${p.nadir?"checked":""}> Onderkant opvullen <span class="muted">(logo of statief weg)</span></label>
     ${p.nadir?`<input type="range" id="vnadirr" min="0.70" max="0.97" step="0.002" value="${p.nadir}" style="flex:1;min-width:140px" aria-label="Vanaf hoe ver opvullen">`:""}</div>
    </div></details>`;
-  $(".more",sh).ontoggle=e=>lsSet("moreOpen",e.target.open);
+  $(".more",sh).ontoggle=e=>lsSet("moreOpen",e.target.open);bindRbar();
   sh.querySelectorAll("[data-w]").forEach(b=>b.onclick=()=>selectWall(b.dataset.w));
   $("#vsel",sh).onclick=()=>{V.mode="select";V.seeds=[];V.selMask=null;V.erase=false;V.sel=null;V.preview=null;refreshCompose();drawOverlay();renderSheet()};
   $("#vlink",sh).onclick=()=>{V.mode="link";V.linkDraft=null;V.sel=null;drawOverlay();renderSheet()};
