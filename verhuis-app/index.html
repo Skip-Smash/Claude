@@ -436,7 +436,7 @@ function doRender(){
 }
 function noDb(){return `<div class="card stack"><h2>Opslag niet beschikbaar</h2><p class="muted">Deze app bewaart alles in een gedeelde opslag. Die is in deze weergave niet bereikbaar. Open de app ingelogd op claude.ai, of vraag de eigenaar om je toegang als Editor te geven.</p></div>`}
 function renderCount(){const s=settings();const k=daysTo(s.keyDate),m=daysTo(s.moveDate);
-  $("#countTop").innerHTML=k>0?`sleutel over <b>${k}</b> d<span class="lg"> · verhuizen over <b>${m}</b> d</span>`:m>0?`verhuizen over <b>${m}</b> d`:`we wonen er!`}
+  $("#countTop").innerHTML=k>0?`<span title="Dagen tot de sleutel">🔑 <b>${k}</b> d</span> · <span title="Dagen tot de verhuizing">📦 <b>${m}</b> d</span>`:m>0?`<span title="Dagen tot de verhuizing">📦 <b>${m}</b> d</span>`:`we wonen er!`}
 
 /* ---------- inklapbare blokken ---------- */
 const fold=(key,title,meta,body,def=true,cls="")=>`<details class="fold ${cls}" data-fold="${key}" ${lsGet("fold:"+key,def)?"open":""}><summary><h2>${title}</h2>${meta!==""&&meta!=null?`<span class="tape">${meta}</span>`:""}<span class="chev" aria-hidden="true"></span></summary><div class="foldbody">${body}</div></details>`;
