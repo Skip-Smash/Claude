@@ -165,6 +165,14 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:60
 .pic span{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);color:#fff;font-size:12px;padding:3px 6px;text-align:left;border-radius:0 0 8px 8px}
 .pinbtn{background:#E60023;border-color:#E60023;color:#fff}
 .pinbtn:hover{border-color:#ad081b}
+.wgroup{display:flex;flex-direction:column;gap:4px}
+.wgroup .eyebrow{margin-top:4px}
+.wrow{display:flex;align-items:center;gap:10px;padding:8px 2px;border-top:1px solid var(--line)}
+.wgroup .eyebrow+.wrow{border-top:0}
+.wrow input[type=checkbox]{width:20px;height:20px;accent-color:var(--tape);flex:none}
+.wrow .dot{width:16px;height:16px}
+.wrow .wl{flex:1;min-width:0;cursor:pointer}
+.wrow.done .wl>div:first-child{text-decoration:line-through;color:var(--muted)}
 .shopboard{display:flex;gap:12px;overflow-x:auto;padding-bottom:6px;align-items:flex-start;scroll-snap-type:x proximity}
 .shopcol{flex:0 0 min(300px,82vw);background:var(--card2);border:1px solid var(--line);border-radius:18px;padding:12px;display:flex;flex-direction:column;gap:10px;scroll-snap-align:start;transition:border-color .12s,background .12s}
 .shopcol.over{border-color:var(--tape);background:var(--tape-soft)}
@@ -494,7 +502,7 @@ function roomCard(r){
   const pals=roomPaints(r.id);
   const open=S.tasks.filter(t=>t.roomId===r.id&&!t.done).length;
   return `<a class="card room" href="#kamer-${r.id}" style="text-decoration:none;color:inherit"><div class="ph" style="${th?`background-image:url('${assetUrl(th.thumbId)}')`:""}"><span class="tape" style="background:${esc(r.color||"#2D5BD0")};color:#fff">${esc(r.name||"Kamer")}</span></div>
-  <div class="b"><div class="small muted">${esc(r.style||"Nog geen stijl")}</div><div class="row between"><div class="swatches">${pals.map(p=>`<span class="dot" style="background:${esc(p.hex)}" title="${esc(p.name)}"></span>`).join("")}</div><span class="small muted">${ph.length} foto${ph.length===1?"":"'s"} · ${open} open</span></div></div></a>`;
+  <div class="b"><div class="small muted">${esc(r.style||"Nog geen stijl")}</div><div class="row between"><div class="swatches">${pals.map(p=>`<span class="dot" style="background:${esc(p.hex)}" title="${esc(p.name)}"></span>`).join("")}</div><span class="small muted">${(()=>{const w=roomWork(r.id);const n=w.rows.length,d=w.rows.filter(x=>x.done).length;return n?`${d}/${n} klaar`:`${open} open`})()}</span></div></div></a>`;
 }
 function roomPaints(roomId){const ids=new Set();S.photos.filter(p=>p.roomId===roomId).forEach(p=>{const v=(p.variants||[]).find(v=>v.id===p.activeVariant)||(p.variants||[])[0];if(v)Object.values(v.colors||{}).forEach(id=>id&&ids.add(id))});return[...ids].map(id=>byId("paints",id)).filter(Boolean)}
 
@@ -517,6 +525,8 @@ function viewRoom(id){
   <p class="muted">${r.style?`Stijl: <b style="color:var(--ink)">${esc(r.style)}</b>`:"Nog geen stijl gekozen"}${r.notes?` · ${esc(r.notes)}`:""}</p></div>
   <div class="row">${r.pinterest?`<a class="btn pinbtn" href="${esc(r.pinterest)}" target="_blank" rel="noopener">Pinterest-verzameling ↗</a>`:`<button class="btn" data-act="setPin" data-id="${id}">+ Pinterest-verzameling</button>`}<button class="btn" data-act="editRoom" data-id="${id}">Bewerken</button><button class="btn" data-act="exportRoom" data-id="${id}" ${downloads?"":"disabled title='Downloaden is hier niet beschikbaar'"}>Download deze kamer</button></div></div>
 
+  ${(()=>{const w=roomWork(id);const n=w.rows.length,d=w.rows.filter(x=>x.done).length;
+    return fold("rwerk","Werklijst",n?`${d}/${n}`:"",workBody(id,w),true,"card")})()}
   ${fold("r360","360°-foto's",ph.length||"",`${canUpload?`<div class="row" style="justify-content:flex-end"><label class="btn sm">360°-foto toevoegen<input type="file" accept="image/*" hidden data-pano-room="${id}"></label></div>`:""}
     ${ph.length?`<div class="grid g3">${ph.map(p=>`<div class="card room" data-open-pano="${p.id}"><div class="ph" style="background-image:url('${assetUrl(p.thumbId)}')"><span class="tape solid">Open in 360°</span></div><div class="b"><b>${esc(p.name||"Foto")}</b><span class="small muted">${(p.walls||[]).filter(w=>!w.exclude).length} muren · ${(p.variants||[]).length} variant${(p.variants||[]).length===1?"":"en"}${p.w?` · ${p.w}×${p.h}`:""}</span>${(p.renders||[]).length?`<div class="rgal">${(p.renders||[]).map(r=>`<button class="rthumb" data-open-render="${p.id}|${r.id}" title="${esc(r.name)}" style="background-image:url('${assetUrl(r.thumbId)}')"><span>${esc(r.name)}</span></button>`).join("")}</div>`:""}
       ${canUpload?`<div class="row" style="gap:6px;margin-top:4px"><button class="btn sm" data-copy-pano="${p.id}" title="Kopieer de 360°-foto (zonder logo) om te plakken in ChatGPT of Gemini">Kopieer foto</button>${downloads?`<button class="btn sm" data-dl-pano="${p.id}">Download</button>`:""}<label class="btn sm primary">+ AI-render<input type="file" accept="image/*" hidden data-add-render="${p.id}"></label><label class="btn sm">Foto vervangen<input type="file" accept="image/*" hidden data-replace-pano="${p.id}"></label></div>`:""}</div></div>`).join("")}</div>
@@ -627,6 +637,52 @@ function viewCosts(){
   ${ordered.length?fold("k-done","Besteld & binnen",ordered.length,itemTable(ordered),false,"card"):""}
   ${ideas.length?fold("k-idee","Ideeën",ideas.length,itemTable(ideas),false,"card"):""}
   </div>`;
+}
+/* ---------- werklijst per kamer ---------- */
+const WORK_OPTS=[["","Alleen kopen"],["asm","In elkaar zetten"],["mount","Ophangen / monteren"],["install","Aansluiten / installeren"],["place","Neerzetten / inrichten"]];
+const WORK_VERB={asm:"in elkaar zetten",mount:"ophangen / monteren",install:"aansluiten",place:"neerzetten"};
+function roomWork(id){
+  const groups=[];const rows=[];
+  const g=(key,title,list)=>{if(list.length){groups.push({key,title,list});rows.push(...list)}};
+  const paint=[];
+  S.photos.filter(p=>p.roomId===id).forEach(p=>{const v=activeVar(p);(p.walls||[]).filter(w=>!w.exclude).forEach(w=>{const pa=byId("paints",(v.colors||{})[w.id]);if(!pa)return;
+    paint.push({key:`wall|${p.id}|${w.id}`,label:`${w.name}: ${pa.name||pa.hex}`,sub:[pa.brand,pa.code,pa.sheen].filter(Boolean).join(" · ")+(num(w.m2)?` · ${num(w.m2)} m²`:""),hex:pa.hex,done:!!w.painted,edit:`paint|${pa.id}`})})});
+  g("verf","Schilderen",paint);
+  const items=S.items.filter(i=>i.roomId===id&&i.status!=="idee");
+  g("kopen","Kopen",items.map(i=>({key:`buy|${i.id}`,label:i.title+(num(i.qty)>1?` × ${num(i.qty)}`:""),sub:[ITEM_STATUS.find(x=>x[0]===(i.status||"bestellen"))?.[1],i.store?(byId("stores",i.store)||{}).name:""].filter(Boolean).join(" · "),done:["binnen"].includes(i.status),edit:`item|${i.id}`})));
+  g("klus","In elkaar zetten & monteren",items.filter(i=>i.work).map(i=>({key:`work|${i.id}`,label:`${i.title} ${WORK_VERB[i.work]||""}`.trim(),sub:i.status==="binnen"?"is binnen":"nog niet binnen",done:!!i.workDone,edit:`item|${i.id}`})));
+  g("sh","Smarthome",S.sh.filter(x=>x.roomId===id&&x.status&&x.status!=="idee").map(x=>({key:`sh|${x.id}`,label:x.title,sub:SH_STATUS.find(y=>y[0]===x.status)?.[1]||"",done:x.status==="klaar",edit:`sh|${x.id}`})));
+  g("taken","Taken",S.tasks.filter(t=>t.roomId===id).sort(taskSort).map(t=>({key:`task|${t.id}`,label:t.title,sub:t.date?dfmt(t.date):(PHASES.find(p=>p.id===(t.phase||"voor"))||{}).name,done:!!t.done,edit:`task|${t.id}`})));
+  return {groups,rows};
+}
+function workBody(id,w){
+  const n=w.rows.length,d=w.rows.filter(x=>x.done).length;
+  return `${n?`<div class="row between"><div class="bar" style="flex:1;min-width:120px"><i style="width:${n?d/n*100:0}%"></i></div><span class="small muted num">${d} van ${n} klaar</span><button class="btn sm" data-workpdf="${id}">PDF</button></div>`:""}
+  ${w.groups.map(gr=>`<div class="wgroup"><div class="eyebrow">${esc(gr.title)}</div>${gr.list.sort((a,b)=>a.done-b.done).map(r=>`<div class="wrow ${r.done?"done":""}"><input type="checkbox" ${r.done?"checked":""} data-work="${r.key}" aria-label="Klaar: ${esc(r.label)}">${r.hex?`<span class="dot" style="background:${esc(r.hex)}"></span>`:""}<div class="wl" data-workedit="${r.edit}"><div>${esc(r.label)}</div>${r.sub?`<div class="small muted">${esc(r.sub)}</div>`:""}</div></div>`).join("")}</div>`).join("")||`<div class="empty">Nog niets te doen in deze kamer. Kies muurkleuren in de 360°-viewer, voeg producten toe bij de Bestellijst (met “wat moet ermee gebeuren”) of zet taken op deze kamer.</div>`}
+  <div class="row" style="gap:6px"><button class="btn sm" data-act="newItem" data-room="${id}">+ Product</button><button class="btn sm" data-act="workTask" data-id="${id}">+ Taak</button></div>`;
+}
+async function workToggle(key,on){
+  const [k,a,b]=key.split("|");
+  if(k==="wall"){const p=byId("photos",a);if(!p)return;await safe(()=>upd("photos",a,{walls:(p.walls||[]).map(w=>w.id===b?{...w,painted:on}:w)}));return}
+  if(k==="buy"){await safe(()=>upd("items",a,{status:on?"binnen":"bestellen"}));return}
+  if(k==="work"){await safe(()=>upd("items",a,{workDone:on}));return}
+  if(k==="sh"){await safe(()=>upd("sh",a,{status:on?"klaar":"gekozen"}));return}
+  if(k==="task"){await safe(()=>upd("tasks",a,{done:on,doneBy:on?meId:null,doneAt:on?Date.now():null}))}
+}
+async function workPdf(id){
+  if(!downloads){toast("Downloaden is hier niet beschikbaar.");return}
+  const r=byId("rooms",id);const w=roomWork(id);let J;try{J=await loadJsPDF()}catch(e){toast("De PDF-module kon niet laden. Probeer het opnieuw.");return}
+  const doc=new J.jsPDF({unit:"mm",format:"a4"});const W=210,M=18;let y=M;const clean=t=>String(t||"").replace(/[^\u0000-\u00FF€]/g,"");
+  doc.setFont("helvetica","bold");doc.setFontSize(20);doc.setTextColor(42,33,27);doc.text(clean(r.name)+" – werklijst",M,y+4);
+  doc.setFont("helvetica","normal");doc.setFontSize(10);doc.setTextColor(120,104,94);doc.text(`Ons nieuwe huis · ${new Date().toLocaleDateString("nl-NL",{day:"numeric",month:"long",year:"numeric"})}`,M,y+10);y+=20;
+  w.groups.forEach(gr=>{if(y>270){doc.addPage();y=M}doc.setFont("helvetica","bold");doc.setFontSize(12);doc.setTextColor(42,33,27);doc.text(clean(gr.title),M,y);y+=3;doc.setDrawColor(220,210,200);doc.line(M,y,W-M,y);y+=6;
+    gr.list.forEach(rw=>{const lines=doc.splitTextToSize(clean(rw.label),W-2*M-14);const h=lines.length*5+(rw.sub?4:0)+3;if(y+h>285){doc.addPage();y=M}
+      doc.setDrawColor(120,104,94);doc.rect(M,y-3.6,4.2,4.2);if(rw.done){doc.line(M+.8,y-1.4,M+1.8,y-.3);doc.line(M+1.8,y-.3,M+3.6,y-2.9)}
+      let x=M+8;if(rw.hex){const c=hexToRgb(rw.hex);if(c){doc.setFillColor(c[0],c[1],c[2]);doc.circle(x+1.6,y-1.5,1.6,"F");x+=5}}
+      doc.setFont("helvetica","normal");doc.setFontSize(11);doc.setTextColor(rw.done?150:42,rw.done?140:33,rw.done?130:27);doc.text(lines,x,y);
+      if(rw.sub){doc.setFontSize(9);doc.setTextColor(120,104,94);doc.text(clean(rw.sub),x,y+lines.length*5-.5)}y+=h});y+=4});
+  if(!w.rows.length){doc.setFontSize(11);doc.text("Nog niets te doen.",M,y)}
+  try{await downloads.save({filename:`Werklijst ${String(r.name).replace(/[^\w\- ]+/g,"").trim()}.pdf`,data:doc.output("blob")})}catch(e){if(e&&e.code!=="declined")toast("Downloaden lukte niet.")}
 }
 /* ---------- winkels & boodschappenlijsten ---------- */
 const sortStores=()=>[...S.stores].sort((a,b)=>(a.order??0)-(b.order??0)||String(a.name).localeCompare(b.name));
@@ -758,7 +814,7 @@ function confirmBox(text,yes="Verwijderen"){return new Promise(res=>{const m=mod
 const roomOpts=()=>[["","— geen kamer —"],...sortRooms().map(r=>[r.id,r.name])];
 const taskFields=()=>[{k:"title",label:"Taak",full:true},{k:"phase",label:"Fase",type:"select",options:PHASES.map(p=>[p.id,p.name])},{k:"date",label:"Datum",type:"date"},{k:"roomId",label:"Kamer",type:"select",options:roomOpts()},{k:"cost",label:"Kosten (€)",type:"number"},{k:"notes",label:"Notities",type:"textarea",full:true}];
 const storeOpts=()=>[["","— nog geen winkel —"],...sortStores().map(x=>[x.id,x.name])];
-const itemFields=()=>[{k:"title",label:"Wat",full:true},{k:"store",label:"Winkel",type:"select",options:storeOpts()},{k:"cat",label:"Categorie",type:"select",options:ITEM_CATS},{k:"roomId",label:"Kamer",type:"select",options:roomOpts()},{k:"qty",label:"Aantal",type:"number",def:1},{k:"price",label:"Prijs per stuk (€)",type:"number"},{k:"status",label:"Status",type:"select",options:ITEM_STATUS,def:"bestellen"},{k:"link",label:"Link naar winkel",type:"url",ph:"https://"},{k:"notes",label:"Notities",type:"textarea",full:true}];
+const itemFields=()=>[{k:"title",label:"Wat",full:true},{k:"store",label:"Winkel",type:"select",options:storeOpts()},{k:"cat",label:"Categorie",type:"select",options:ITEM_CATS},{k:"roomId",label:"Kamer",type:"select",options:roomOpts()},{k:"qty",label:"Aantal",type:"number",def:1},{k:"price",label:"Prijs per stuk (€)",type:"number"},{k:"status",label:"Status",type:"select",options:ITEM_STATUS,def:"bestellen"},{k:"work",label:"Wat moet ermee gebeuren?",type:"select",options:WORK_OPTS},{k:"link",label:"Link naar winkel",type:"url",ph:"https://"},{k:"notes",label:"Notities",type:"textarea",full:true}];
 const paintFields=()=>[{k:"name",label:"Kleurnaam",ph:"bijv. Warm grijs"},{k:"store",label:"Winkel",type:"select",options:storeOpts()},{k:"hex",label:"Kleur",type:"color"},{k:"brand",label:"Merk",ph:"Flexa, Histor, Little Greene…"},{k:"code",label:"Kleurcode",ph:"zoals op de waaier"},{k:"sheen",label:"Glansgraad",type:"select",options:["mat","extra mat","zijdeglans","hoogglans",""]},{k:"price",label:"Prijs per liter (€)",type:"number"},{k:"m2",label:"Te schilderen m²",type:"number"},{k:"layers",label:"Lagen",type:"number",def:2},{k:"coverage",label:"Dekking m²/liter",type:"number",def:9},{k:"link",label:"Link",type:"url",ph:"https://"},{k:"notes",label:"Notities",type:"textarea",full:true}];
 const shFields=()=>[{k:"title",label:"Wat",full:true},{k:"store",label:"Winkel",type:"select",options:storeOpts()},{k:"kind",label:"Soort",type:"select",options:SH_KINDS},{k:"status",label:"Status",type:"select",options:SH_STATUS},{k:"roomId",label:"Kamer",type:"select",options:roomOpts()},{k:"protocol",label:"Protocol / platform",ph:"Zigbee, Matter, wifi…"},{k:"qty",label:"Aantal",type:"number",def:1},{k:"price",label:"Prijs per stuk (€)",type:"number"},{k:"link",label:"Link",type:"url",ph:"https://"},{k:"notes",label:"Notities",type:"textarea",full:true}];
 async function newPaint(init={}){const v=await form("Nieuwe kleur",paintFields(),{layers:2,coverage:9,...init});if(!v)return null;if(!hexToRgb(v.hex)){toast("Vul een geldige kleur in, zoals #A7B5A0.");return null}v.hex=rgbToHex(...hexToRgb(v.hex));return await safe(()=>add("paints",v))}
@@ -799,7 +855,7 @@ async function withBusy(msg,fn){const t=document.createElement("div");t.classNam
 /* ---------- events ---------- */
 document.addEventListener("click",async e=>{
   if(e.target.closest("label")&&e.target.closest("[data-open-pano]"))return;
-  const t=e.target.closest("[data-shoppdf],[data-shopmenu],[data-shopedit],[data-copy-pano],[data-dl-pano],[data-pic],[data-open-render],[data-act],[data-toggle],[data-edit-task],[data-edit-item],[data-edit-paint],[data-edit-sh],[data-tip],[data-tc],[data-pf],[data-plan],[data-place],[data-open-pano],[data-del-mood],[data-pick]");
+  const t=e.target.closest("[data-workpdf],[data-workedit],[data-shoppdf],[data-shopmenu],[data-shopedit],[data-copy-pano],[data-dl-pano],[data-pic],[data-open-render],[data-act],[data-toggle],[data-edit-task],[data-edit-item],[data-edit-paint],[data-edit-sh],[data-tip],[data-tc],[data-pf],[data-plan],[data-place],[data-open-pano],[data-del-mood],[data-pick]");
   if(!t||!db)return;if(e.target.closest("label")&&t.dataset.openPano)return;const d=t.dataset;
   if(d.toggle!==undefined){const task=byId("tasks",d.toggle);if(task)await safe(()=>upd("tasks",task.id,{done:!task.done,doneBy:!task.done?meId:null,doneAt:!task.done?Date.now():null}));return}
   if(d.editTask){e.preventDefault();const task=byId("tasks",d.editTask);const v=await form("Taak bewerken",taskFields(),task,"Verwijderen");if(!v)return;if(v.__extra){if(await confirmBox(`“${task.title}” verwijderen?`))await safe(()=>del("tasks",task.id));return}await safe(()=>upd("tasks",task.id,v));return}
@@ -817,6 +873,12 @@ document.addEventListener("click",async e=>{
   if(d.pick){openPicker(byId("mood",d.pick));return}
   if(d.pic){openPic(d.pic);return}
   if(d.shoppdf){shopPdf(d.shoppdf);return}
+  if(d.workpdf){workPdf(d.workpdf);return}
+  if(d.workedit){const [k,id]=d.workedit.split("|");
+    if(k==="paint")return editPaint(id);
+    if(k==="task"){const task=byId("tasks",id);const v=await form("Taak bewerken",taskFields(),task,"Verwijderen");if(!v)return;if(v.__extra){if(await confirmBox(`“${task.title}” verwijderen?`))await safe(()=>del("tasks",id));return}await safe(()=>upd("tasks",id,v));return}
+    if(k==="item"){const it=byId("items",id);const v=await form("Product bewerken",itemFields(),it,"Verwijderen");if(!v)return;if(v.__extra){if(await confirmBox(`“${it.title}” verwijderen?`))await safe(()=>del("items",id));return}await safe(()=>upd("items",id,v));return}
+    if(k==="sh"){const x=byId("sh",id);const v=await form("Smarthome-onderdeel",shFields(),x);if(v&&!v.__extra)await safe(()=>upd("sh",id,v));return}}
   if(d.shopedit){const [c,id]=d.shopedit.split("|");if(c==="paints")return editPaint(id);const fld=c==="items"?itemFields():shFields();const cur=byId(c,id);const v=await form(c==="items"?"Product bewerken":"Smarthome-onderdeel",fld,cur);if(v&&!v.__extra)await safe(()=>upd(c,id,v));return}
   if(d.shopmenu){const st=byId("stores",d.shopmenu);const v=await form("Winkel",[{k:"name",label:"Naam",full:true},{k:"notes",label:"Notitie (adres, openingstijden, klantpas…)",type:"textarea",full:true},{k:"order",label:"Volgorde",type:"number"}],st,"Winkel verwijderen");if(!v)return;
     if(v.__extra){if(!await confirmBox(`Winkel “${st.name}” verwijderen? De producten gaan terug naar “Nog geen winkel”.`))return;for(const e of shopEntries().filter(x=>x.store===st.id))await shopSetStore(e.col+"|"+e.id,"");await safe(()=>del("stores",st.id));return}
@@ -835,6 +897,7 @@ document.addEventListener("click",async e=>{
   if(a==="newTask"){const v=await form("Nieuwe taak",taskFields(),{phase:"voor"});if(v&&v.title)await safe(()=>add("tasks",{...v,done:false}))}
   if(a==="newItem"){const v=await form("Nieuw item",itemFields(),{roomId:d.room||"",status:"bestellen",qty:1});if(v&&v.title)await safe(()=>add("items",v))}
   if(a==="newPaint")newPaint();
+  if(a==="workTask"){const v=await form("Nieuwe taak",taskFields(),{phase:"na",roomId:d.id});if(v&&v.title)await safe(()=>add("tasks",{...v,done:false}))}
   if(a==="newStore"){const v=await form("Nieuwe winkel",[{k:"name",label:"Naam",full:true,ph:"bijv. Gamma, IKEA, Praxis, Action"},{k:"notes",label:"Notitie",type:"textarea",full:true}]);if(v&&v.name)await safe(()=>add("stores",{name:v.name,notes:v.notes||"",order:S.stores.length}))}
   if(a==="newSh"){const v=await form("Smarthome toevoegen",shFields(),{kind:"Hardware",status:"idee",qty:1});if(v&&v.title)await safe(()=>add("sh",v))}
   if(a==="delPlan"){if(await confirmBox("Deze plattegrond verwijderen?")){await safe(()=>del("plans",d.id));planSel=null}}
@@ -847,6 +910,7 @@ document.addEventListener("change",async e=>{
   if(el.dataset.set){const s=settings();const v=el.dataset.set==="budget"?num(el.value):el.value;await safe(()=>setDoc("settings","main",{keyDate:s.keyDate,moveDate:s.moveDate,budget:s.budget,[el.dataset.set]:v}));return}
   if(el.dataset.itemStatus){await safe(()=>upd("items",el.dataset.itemStatus,{status:el.value}));return}
   if(el.dataset.shStatus){await safe(()=>upd("sh",el.dataset.shStatus,{status:el.value}));return}
+  if(el.dataset.work){await workToggle(el.dataset.work,el.checked);return}
   if(el.dataset.shopdone){await shopToggle(el.dataset.shopdone,el.checked);return}
   if(el.dataset.paintBought){await safe(()=>upd("paints",el.dataset.paintBought,{bought:el.checked}));return}
   if(el.id==="batchPano"&&el.files.length){const files=[...el.files];el.value="";
