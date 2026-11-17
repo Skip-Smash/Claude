@@ -165,6 +165,20 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:60
 .pic span{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);color:#fff;font-size:12px;padding:3px 6px;text-align:left;border-radius:0 0 8px 8px}
 .pinbtn{background:#E60023;border-color:#E60023;color:#fff}
 .pinbtn:hover{border-color:#ad081b}
+.shopboard{display:flex;gap:12px;overflow-x:auto;padding-bottom:6px;align-items:flex-start;scroll-snap-type:x proximity}
+.shopcol{flex:0 0 min(300px,82vw);background:var(--card2);border:1px solid var(--line);border-radius:18px;padding:12px;display:flex;flex-direction:column;gap:10px;scroll-snap-align:start;transition:border-color .12s,background .12s}
+.shopcol.over{border-color:var(--tape);background:var(--tape-soft)}
+.shophead{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.shophead h3{font-size:20px}
+.shoplist{display:flex;flex-direction:column;gap:6px;min-height:44px}
+.shopempty{border:1.5px dashed var(--line);border-radius:12px;padding:12px;text-align:center;color:var(--muted);font-size:13px}
+.shopit{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
+.shopit .grip{cursor:grab;color:var(--muted);touch-action:none;user-select:none;padding:6px 2px;font-size:14px;letter-spacing:-3px}
+.shopit input[type=checkbox]{width:18px;height:18px;accent-color:var(--tape);flex:none}
+.shopit .si{flex:1;min-width:0;cursor:pointer}
+.shopit.done .si b{text-decoration:line-through;color:var(--muted)}
+.shopit.dragging{opacity:.35}
+.shopit.ghost{position:fixed;z-index:90;pointer-events:none;box-shadow:0 10px 30px rgba(0,0,0,.4);transform:rotate(-2deg)}
 details.fold>summary{list-style:none;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;padding-block:2px}
 details.fold>summary::-webkit-details-marker{display:none}
 details.fold>summary h2{flex:0 1 auto}
@@ -386,7 +400,7 @@ const TIP_CATS=[...new Set(TIPS.map(t=>t.cat))];
 /* ---------- helpers ---------- */
 const $=(s,r=document)=>r.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const eur=n=>"€ "+(Number(n)||0).toLocaleString("nl-NL",{minimumFractionDigits:0,maximumFractionDigits:2});
+const eur=n=>{const v=Math.round((Number(n)||0)*100)/100;return "€ "+v.toLocaleString("nl-NL",{minimumFractionDigits:v%1?2:0,maximumFractionDigits:2})};
 const num=v=>{const n=parseFloat(String(v??"").replace(",","."));return isFinite(n)?n:0};
 const dfmt=d=>{if(!d)return"";const x=new Date(d+"T12:00:00");return x.toLocaleDateString("nl-NL",{day:"numeric",month:"short"})};
 const daysTo=d=>Math.ceil((new Date(d+"T00:00:00")-new Date(new Date().toDateString()))/864e5);
@@ -399,7 +413,7 @@ function hexToRgb(h){h=String(h||"").replace("#","");if(h.length===3)h=h.split("
 const rgbToHex=(r,g,b)=>"#"+[r,g,b].map(v=>Math.round(v).toString(16).padStart(2,"0")).join("").toUpperCase();
 
 /* ---------- staat ---------- */
-const COLS=["rooms","photos","paints","plans","tasks","items","mood","sh","settings","chat","pics"];
+const COLS=["rooms","photos","paints","plans","tasks","items","mood","sh","settings","chat","pics","stores"];
 const S={loaded:{}};COLS.forEach(c=>S[c]=[]);
 let db=null,assets=null,userCap=null,downloads=null,sample=null,meId=null,canUpload=false;
 const settings=()=>Object.assign({keyDate:KEY_DATE_DEFAULT,moveDate:MOVE_DATE_DEFAULT,budget:0},(S.settings.find(d=>d.id==="main")||{}));
@@ -605,6 +619,7 @@ function viewCosts(){
   </div>
   ${fold("k-cat","Per categorie","",`${Object.keys(c.cats).length?Object.entries(c.cats).sort((a,b)=>b[1].pl-a[1].pl).map(([k,v])=>`<div><div class="row between small"><b>${esc(k)}</b><span class="mono">${eur(v.sp)} / ${eur(v.pl)}</span></div><div class="bar" style="background:var(--soft)"><i style="width:${v.pl/maxCat*100}%;background:linear-gradient(90deg,var(--ok) ${v.pl?v.sp/v.pl*100:0}%,var(--tape) 0)"></i></div></div>`).join(""):`<p class="muted">Nog geen bedragen. Voeg items toe of vul bij verfkleuren de m² en prijs in.</p>`}
    <div class="small muted"><span class="dot" style="background:var(--ok);width:10px;height:10px"></span> uitgegeven <span class="dot" style="background:var(--tape);width:10px;height:10px;margin-left:10px"></span> nog te besteden</div>`,true,"card")}
+  ${fold("k-shop","Winkels & boodschappenlijsten",S.stores.length?S.stores.length+" winkel"+(S.stores.length===1?"":"s"):"",shopBoard(),true,"card")}
   ${fold("k-order","Te bestellen",toOrder.length,toOrder.length?itemTable(toOrder):`<p class="muted small">Niets meer te bestellen.</p>`,true,"card")}
   ${fold("k-verf","Verf-boodschappenlijst",S.paints.length||"",`
    ${S.paints.length?`<div class="scroll"><table class="tbl"><tr><th>Kleur</th><th>Merk & code</th><th class="r">m²</th><th class="r">Liter</th><th class="r">Kosten</th><th>Gekocht</th></tr>${S.paints.map(p=>{const k=paintCalc(p);const used=paintUse(p.id);return `<tr><td><span class="row" style="gap:6px;flex-wrap:nowrap"><span class="dot" style="background:${esc(p.hex)}"></span><a href="#" data-edit-paint="${p.id}">${esc(p.name||p.hex)}</a></span><div class="small muted">${used.length?esc(used.join(", ")):"nog op geen muur"}</div></td><td class="mono small">${esc([p.brand,p.code,p.sheen].filter(Boolean).join(" · "))}</td><td class="r mono">${num(p.m2)||"–"}</td><td class="r mono">${k.liters?k.liters.toFixed(1):"–"}</td><td class="r mono">${k.cost?eur(k.cost):"–"}</td><td><input type="checkbox" data-paint-bought="${p.id}" ${p.bought?"checked":""} aria-label="Gekocht" style="width:20px;height:20px;accent-color:var(--ok)"></td></tr>`}).join("")}</table></div><p class="small muted">Liters = m² × lagen ÷ dekking (standaard 2 lagen, 9 m² per liter). Prijs per liter staat bij de kleur.</p>`:`<p class="muted">Nog geen kleuren. Die maak je in de 360°-viewer of bij een moodboard.</p>`}
@@ -612,6 +627,83 @@ function viewCosts(){
   ${ordered.length?fold("k-done","Besteld & binnen",ordered.length,itemTable(ordered),false,"card"):""}
   ${ideas.length?fold("k-idee","Ideeën",ideas.length,itemTable(ideas),false,"card"):""}
   </div>`;
+}
+/* ---------- winkels & boodschappenlijsten ---------- */
+const sortStores=()=>[...S.stores].sort((a,b)=>(a.order??0)-(b.order??0)||String(a.name).localeCompare(b.name));
+function shopEntries(){
+  const out=[];
+  S.items.filter(i=>i.status!=="idee").forEach(i=>out.push({col:"items",id:i.id,title:i.title,sub:[roomName(i.roomId),i.cat].filter(Boolean).join(" · "),qty:num(i.qty||1),unit:"",amount:num(i.qty||1)*num(i.price),store:i.store||"",done:["besteld","binnen"].includes(i.status),link:i.link||""}));
+  S.paints.forEach(pt=>{const k=paintCalc(pt);out.push({col:"paints",id:pt.id,title:"Verf: "+(pt.name||pt.hex),sub:[pt.brand,pt.code,pt.sheen].filter(Boolean).join(" · "),qty:k.liters?Math.ceil(k.liters*2)/2:0,unit:k.liters?" L":"",amount:k.cost,store:pt.store||"",done:!!pt.bought,hex:pt.hex,link:pt.link||""})});
+  S.sh.filter(x=>x.status&&x.status!=="idee").forEach(x=>out.push({col:"sh",id:x.id,title:x.title,sub:["Smarthome",roomName(x.roomId)].filter(Boolean).join(" · "),qty:num(x.qty||1),unit:"",amount:num(x.qty||1)*num(x.price),store:x.store||"",done:["besteld","klaar"].includes(x.status),link:x.link||""}));
+  return out;
+}
+function shopCard(e){return `<div class="shopit ${e.done?"done":""}" data-shop="${e.col}|${e.id}">
+  <span class="grip" data-grip="${e.col}|${e.id}" title="Sleep naar een winkel" aria-label="Verslepen">⋮⋮</span>
+  <input type="checkbox" ${e.done?"checked":""} data-shopdone="${e.col}|${e.id}" aria-label="Gekocht: ${esc(e.title)}">
+  <div class="si" data-shopedit="${e.col}|${e.id}">${e.hex?`<span class="dot" style="background:${esc(e.hex)};width:10px;height:10px"></span> `:""}<b>${esc(e.title)}</b>${e.qty&&(e.qty>1||e.unit)?` <span class="muted">× ${e.qty}${e.unit}</span>`:""}${e.sub?`<div class="small muted">${esc(e.sub)}</div>`:""}</div>
+  <span class="mono small">${e.amount?eur(e.amount):""}</span></div>`}
+function shopBoard(){
+  const all=shopEntries();const stores=sortStores();
+  const col=(id,name,list,isStore)=>{const open=list.filter(e=>!e.done),tot=list.reduce((a,e)=>a+e.amount,0);
+    return `<div class="shopcol" data-dropstore="${id}"><div class="shophead"><div style="min-width:0"><h3>${esc(name)}</h3><div class="small muted">${open.length} te halen${tot?` · ${eur(tot)}`:""}</div></div>
+      ${isStore?`<div class="row" style="gap:4px;flex-wrap:nowrap"><button class="btn sm" data-shoppdf="${id}" ${list.length?"":"disabled"}>PDF</button><button class="btn sm ghost" data-shopmenu="${id}" aria-label="Winkel bewerken">⋯</button></div>`:""}</div>
+      <div class="shoplist">${list.sort((a,b)=>a.done-b.done).map(shopCard).join("")||`<div class="shopempty">${isStore?"Sleep producten hierheen":"Alles is ingedeeld"}</div>`}</div></div>`};
+  const known=new Set(stores.map(x=>x.id));
+  return `<p class="small muted">Sleep een product met <b>⋮⋮</b> naar een winkel, of tik erop en kies de winkel. Vink af wat je gekocht hebt. Met <b>PDF</b> download je het lijstje van die winkel.</p>
+   <div class="row"><button class="btn sm primary" data-act="newStore">+ Winkel</button>${stores.length?`<button class="btn sm" data-shoppdf="__all">PDF van alle winkels</button>`:""}</div>
+   <div class="shopboard">${col("","Nog geen winkel",all.filter(e=>!known.has(e.store)),false)}${stores.map(st=>col(st.id,st.name,all.filter(e=>e.store===st.id),true)).join("")}</div>`;
+}
+async function shopSetStore(key,storeId){const [c,id]=key.split("|");await safe(()=>upd(c,id,{store:storeId||""}))}
+async function shopToggle(key,on){const [c,id]=key.split("|");
+  if(c==="items")await safe(()=>upd("items",id,{status:on?"binnen":"bestellen"}));
+  else if(c==="paints")await safe(()=>upd("paints",id,{bought:on}));
+  else await safe(()=>upd("sh",id,{status:on?"besteld":"gekozen"}))}
+/* slepen met muis en vinger */
+(function(){let drag=null;
+  document.addEventListener("pointerdown",e=>{const g=e.target.closest("[data-grip]");if(!g)return;e.preventDefault();
+    const card=g.closest(".shopit");const r=card.getBoundingClientRect();const ghost=card.cloneNode(true);ghost.classList.add("ghost");ghost.style.width=r.width+"px";document.body.appendChild(ghost);
+    drag={key:g.dataset.grip,ghost,dx:e.clientX-r.left,dy:e.clientY-r.top,over:null};card.classList.add("dragging");move(e);
+    try{g.setPointerCapture(e.pointerId)}catch(err){}});
+  function move(e){if(!drag)return;drag.ghost.style.left=(e.clientX-drag.dx)+"px";drag.ghost.style.top=(e.clientY-drag.dy)+"px";
+    drag.ghost.style.display="none";const el=document.elementFromPoint(e.clientX,e.clientY);drag.ghost.style.display="";
+    const col=el&&el.closest("[data-dropstore]");if(drag.over&&drag.over!==col)drag.over.classList.remove("over");if(col)col.classList.add("over");drag.over=col;
+    const sb=document.querySelector(".shopboard");if(sb){const b=sb.getBoundingClientRect();if(e.clientX>b.right-40)sb.scrollLeft+=12;else if(e.clientX<b.left+40)sb.scrollLeft-=12}}
+  document.addEventListener("pointermove",e=>{if(drag){e.preventDefault();move(e)}},{passive:false});
+  const end=async e=>{if(!drag)return;const d=drag;drag=null;d.ghost.remove();document.querySelectorAll(".shopit.dragging").forEach(x=>x.classList.remove("dragging"));
+    if(d.over){d.over.classList.remove("over");await shopSetStore(d.key,d.over.dataset.dropstore)}};
+  document.addEventListener("pointerup",end);document.addEventListener("pointercancel",end);
+})();
+/* PDF */
+let jspdfP=null;
+function loadJsPDF(){if(window.jspdf)return Promise.resolve(window.jspdf);if(jspdfP)return jspdfP;
+  jspdfP=new Promise((res,rej)=>{const sc=document.createElement("script");sc.src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";sc.onload=()=>window.jspdf?res(window.jspdf):rej(new Error("jsPDF"));sc.onerror=()=>{jspdfP=null;rej(new Error("laden mislukt"))};document.head.appendChild(sc)});return jspdfP}
+async function shopPdf(storeId){
+  if(!downloads){toast("Downloaden is hier niet beschikbaar.");return}
+  const all=shopEntries();const stores=storeId==="__all"?sortStores():sortStores().filter(x=>x.id===storeId);
+  let J;try{J=await loadJsPDF()}catch(e){toast("De PDF-module kon niet laden. Probeer het opnieuw.");return}
+  const doc=new J.jsPDF({unit:"mm",format:"a4"});const W=210,M=18;let y=M;
+  const money=n=>"€ "+(Number(n)||0).toLocaleString("nl-NL",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const clean=t=>String(t||"").replace(/[^\u0000-\u00FF€]/g,"");
+  stores.forEach((st,si)=>{const list=all.filter(e=>e.store===st.id).sort((a,b)=>a.done-b.done);
+    if(si>0){doc.addPage();y=M}
+    doc.setFont("helvetica","bold");doc.setFontSize(20);doc.setTextColor(42,33,27);doc.text(clean(st.name),M,y+4);
+    doc.setFont("helvetica","normal");doc.setFontSize(10);doc.setTextColor(120,104,94);
+    doc.text(`Boodschappenlijst · Ons nieuwe huis · ${new Date().toLocaleDateString("nl-NL",{day:"numeric",month:"long",year:"numeric"})}`,M,y+10);
+    if(st.notes){doc.text(doc.splitTextToSize(clean(st.notes),W-2*M),M,y+15);y+=5}
+    y+=18;doc.setDrawColor(220,210,200);doc.line(M,y,W-M,y);y+=6;
+    let tot=0;
+    list.forEach(e=>{const lines=doc.splitTextToSize(clean(e.title+(e.qty&&(e.qty>1||e.unit)?`  × ${e.qty}${e.unit}`:"")),120);const sub=e.sub?doc.splitTextToSize(clean(e.sub),120):[];
+      const h=Math.max(8,lines.length*5+sub.length*4+3);if(y+h>285){doc.addPage();y=M}
+      doc.setDrawColor(120,104,94);doc.rect(M,y-3.6,4.2,4.2);if(e.done){doc.line(M+0.8,y-1.4,M+1.8,y-0.3);doc.line(M+1.8,y-0.3,M+3.6,y-2.9)}
+      doc.setFont("helvetica","bold");doc.setFontSize(11);doc.setTextColor(e.done?150:42,e.done?140:33,e.done?130:27);doc.text(lines,M+8,y);
+      if(e.amount){doc.setFont("helvetica","normal");doc.text(money(e.amount),W-M,y,{align:"right"});tot+=e.amount}
+      if(sub.length){doc.setFont("helvetica","normal");doc.setFontSize(9);doc.setTextColor(120,104,94);doc.text(sub,M+8,y+lines.length*5)}
+      y+=h;doc.setDrawColor(235,229,220);doc.line(M+8,y-3,W-M,y-3);y+=2});
+    if(!list.length){doc.setFontSize(11);doc.setTextColor(120,104,94);doc.text("Nog geen producten voor deze winkel.",M,y);y+=8}
+    if(tot){y+=2;doc.setFont("helvetica","bold");doc.setFontSize(12);doc.setTextColor(42,33,27);doc.text("Totaal",M+8,y);doc.text(money(tot),W-M,y,{align:"right"})}
+  });
+  const name=storeId==="__all"?"Boodschappenlijsten":(stores[0]?.name||"Boodschappenlijst");
+  try{await downloads.save({filename:`${name.replace(/[^\w\- ]+/g,"").trim()||"Boodschappenlijst"}.pdf`,data:doc.output("blob")})}catch(e){if(e&&e.code!=="declined")toast(e&&e.code==="rejected_extension"?"PDF's kunnen hier niet worden gedownload.":"Downloaden lukte niet.")}
 }
 function paintUse(pid){const out=[];S.photos.forEach(p=>{const v=activeVar(p);(p.walls||[]).forEach(w=>{if((v.colors||{})[w.id]===pid)out.push(roomName(p.roomId)+": "+w.name)})});return out}
 
@@ -665,9 +757,10 @@ function form(title,fields,init={},extraBtn){
 function confirmBox(text,yes="Verwijderen"){return new Promise(res=>{const m=modal(`<h2>${esc(text)}</h2><div class="row" style="justify-content:flex-end"><button class="btn" id="cn">Annuleren</button><button class="btn primary" id="cy">${esc(yes)}</button></div>`);$("#cn",m).onclick=()=>{m.remove();res(false)};$("#cy",m).onclick=()=>{m.remove();res(true)}})}
 const roomOpts=()=>[["","— geen kamer —"],...sortRooms().map(r=>[r.id,r.name])];
 const taskFields=()=>[{k:"title",label:"Taak",full:true},{k:"phase",label:"Fase",type:"select",options:PHASES.map(p=>[p.id,p.name])},{k:"date",label:"Datum",type:"date"},{k:"roomId",label:"Kamer",type:"select",options:roomOpts()},{k:"cost",label:"Kosten (€)",type:"number"},{k:"notes",label:"Notities",type:"textarea",full:true}];
-const itemFields=()=>[{k:"title",label:"Wat",full:true},{k:"cat",label:"Categorie",type:"select",options:ITEM_CATS},{k:"roomId",label:"Kamer",type:"select",options:roomOpts()},{k:"qty",label:"Aantal",type:"number",def:1},{k:"price",label:"Prijs per stuk (€)",type:"number"},{k:"status",label:"Status",type:"select",options:ITEM_STATUS,def:"bestellen"},{k:"link",label:"Link naar winkel",type:"url",ph:"https://"},{k:"notes",label:"Notities",type:"textarea",full:true}];
-const paintFields=()=>[{k:"name",label:"Kleurnaam",ph:"bijv. Warm grijs"},{k:"hex",label:"Kleur",type:"color"},{k:"brand",label:"Merk",ph:"Flexa, Histor, Little Greene…"},{k:"code",label:"Kleurcode",ph:"zoals op de waaier"},{k:"sheen",label:"Glansgraad",type:"select",options:["mat","extra mat","zijdeglans","hoogglans",""]},{k:"price",label:"Prijs per liter (€)",type:"number"},{k:"m2",label:"Te schilderen m²",type:"number"},{k:"layers",label:"Lagen",type:"number",def:2},{k:"coverage",label:"Dekking m²/liter",type:"number",def:9},{k:"link",label:"Link",type:"url",ph:"https://"},{k:"notes",label:"Notities",type:"textarea",full:true}];
-const shFields=()=>[{k:"title",label:"Wat",full:true},{k:"kind",label:"Soort",type:"select",options:SH_KINDS},{k:"status",label:"Status",type:"select",options:SH_STATUS},{k:"roomId",label:"Kamer",type:"select",options:roomOpts()},{k:"protocol",label:"Protocol / platform",ph:"Zigbee, Matter, wifi…"},{k:"qty",label:"Aantal",type:"number",def:1},{k:"price",label:"Prijs per stuk (€)",type:"number"},{k:"link",label:"Link",type:"url",ph:"https://"},{k:"notes",label:"Notities",type:"textarea",full:true}];
+const storeOpts=()=>[["","— nog geen winkel —"],...sortStores().map(x=>[x.id,x.name])];
+const itemFields=()=>[{k:"title",label:"Wat",full:true},{k:"store",label:"Winkel",type:"select",options:storeOpts()},{k:"cat",label:"Categorie",type:"select",options:ITEM_CATS},{k:"roomId",label:"Kamer",type:"select",options:roomOpts()},{k:"qty",label:"Aantal",type:"number",def:1},{k:"price",label:"Prijs per stuk (€)",type:"number"},{k:"status",label:"Status",type:"select",options:ITEM_STATUS,def:"bestellen"},{k:"link",label:"Link naar winkel",type:"url",ph:"https://"},{k:"notes",label:"Notities",type:"textarea",full:true}];
+const paintFields=()=>[{k:"name",label:"Kleurnaam",ph:"bijv. Warm grijs"},{k:"store",label:"Winkel",type:"select",options:storeOpts()},{k:"hex",label:"Kleur",type:"color"},{k:"brand",label:"Merk",ph:"Flexa, Histor, Little Greene…"},{k:"code",label:"Kleurcode",ph:"zoals op de waaier"},{k:"sheen",label:"Glansgraad",type:"select",options:["mat","extra mat","zijdeglans","hoogglans",""]},{k:"price",label:"Prijs per liter (€)",type:"number"},{k:"m2",label:"Te schilderen m²",type:"number"},{k:"layers",label:"Lagen",type:"number",def:2},{k:"coverage",label:"Dekking m²/liter",type:"number",def:9},{k:"link",label:"Link",type:"url",ph:"https://"},{k:"notes",label:"Notities",type:"textarea",full:true}];
+const shFields=()=>[{k:"title",label:"Wat",full:true},{k:"store",label:"Winkel",type:"select",options:storeOpts()},{k:"kind",label:"Soort",type:"select",options:SH_KINDS},{k:"status",label:"Status",type:"select",options:SH_STATUS},{k:"roomId",label:"Kamer",type:"select",options:roomOpts()},{k:"protocol",label:"Protocol / platform",ph:"Zigbee, Matter, wifi…"},{k:"qty",label:"Aantal",type:"number",def:1},{k:"price",label:"Prijs per stuk (€)",type:"number"},{k:"link",label:"Link",type:"url",ph:"https://"},{k:"notes",label:"Notities",type:"textarea",full:true}];
 async function newPaint(init={}){const v=await form("Nieuwe kleur",paintFields(),{layers:2,coverage:9,...init});if(!v)return null;if(!hexToRgb(v.hex)){toast("Vul een geldige kleur in, zoals #A7B5A0.");return null}v.hex=rgbToHex(...hexToRgb(v.hex));return await safe(()=>add("paints",v))}
 async function editPaint(id){const p=byId("paints",id);const v=await form("Kleur bewerken",paintFields(),p,"Verwijderen");if(!v)return;if(v.__extra){if(await confirmBox(`Kleur “${p.name||p.hex}” verwijderen?`))await safe(()=>del("paints",id));return}if(hexToRgb(v.hex))v.hex=rgbToHex(...hexToRgb(v.hex));await safe(()=>upd("paints",id,v))}
 
@@ -706,7 +799,7 @@ async function withBusy(msg,fn){const t=document.createElement("div");t.classNam
 /* ---------- events ---------- */
 document.addEventListener("click",async e=>{
   if(e.target.closest("label")&&e.target.closest("[data-open-pano]"))return;
-  const t=e.target.closest("[data-copy-pano],[data-dl-pano],[data-pic],[data-open-render],[data-act],[data-toggle],[data-edit-task],[data-edit-item],[data-edit-paint],[data-edit-sh],[data-tip],[data-tc],[data-pf],[data-plan],[data-place],[data-open-pano],[data-del-mood],[data-pick]");
+  const t=e.target.closest("[data-shoppdf],[data-shopmenu],[data-shopedit],[data-copy-pano],[data-dl-pano],[data-pic],[data-open-render],[data-act],[data-toggle],[data-edit-task],[data-edit-item],[data-edit-paint],[data-edit-sh],[data-tip],[data-tc],[data-pf],[data-plan],[data-place],[data-open-pano],[data-del-mood],[data-pick]");
   if(!t||!db)return;if(e.target.closest("label")&&t.dataset.openPano)return;const d=t.dataset;
   if(d.toggle!==undefined){const task=byId("tasks",d.toggle);if(task)await safe(()=>upd("tasks",task.id,{done:!task.done,doneBy:!task.done?meId:null,doneAt:!task.done?Date.now():null}));return}
   if(d.editTask){e.preventDefault();const task=byId("tasks",d.editTask);const v=await form("Taak bewerken",taskFields(),task,"Verwijderen");if(!v)return;if(v.__extra){if(await confirmBox(`“${task.title}” verwijderen?`))await safe(()=>del("tasks",task.id));return}await safe(()=>upd("tasks",task.id,v));return}
@@ -723,6 +816,11 @@ document.addEventListener("click",async e=>{
   if(d.delMood){e.stopPropagation();if(await confirmBox("Van het moodboard halen?"))await safe(()=>del("mood",d.delMood));return}
   if(d.pick){openPicker(byId("mood",d.pick));return}
   if(d.pic){openPic(d.pic);return}
+  if(d.shoppdf){shopPdf(d.shoppdf);return}
+  if(d.shopedit){const [c,id]=d.shopedit.split("|");if(c==="paints")return editPaint(id);const fld=c==="items"?itemFields():shFields();const cur=byId(c,id);const v=await form(c==="items"?"Product bewerken":"Smarthome-onderdeel",fld,cur);if(v&&!v.__extra)await safe(()=>upd(c,id,v));return}
+  if(d.shopmenu){const st=byId("stores",d.shopmenu);const v=await form("Winkel",[{k:"name",label:"Naam",full:true},{k:"notes",label:"Notitie (adres, openingstijden, klantpas…)",type:"textarea",full:true},{k:"order",label:"Volgorde",type:"number"}],st,"Winkel verwijderen");if(!v)return;
+    if(v.__extra){if(!await confirmBox(`Winkel “${st.name}” verwijderen? De producten gaan terug naar “Nog geen winkel”.`))return;for(const e of shopEntries().filter(x=>x.store===st.id))await shopSetStore(e.col+"|"+e.id,"");await safe(()=>del("stores",st.id));return}
+    await safe(()=>upd("stores",st.id,v));return}
   if(d.copyPano){e.stopPropagation();copyPano(d.copyPano,t);return}
   if(d.dlPano){e.stopPropagation();dlPano(d.dlPano);return}
   const a=d.act;
@@ -737,6 +835,7 @@ document.addEventListener("click",async e=>{
   if(a==="newTask"){const v=await form("Nieuwe taak",taskFields(),{phase:"voor"});if(v&&v.title)await safe(()=>add("tasks",{...v,done:false}))}
   if(a==="newItem"){const v=await form("Nieuw item",itemFields(),{roomId:d.room||"",status:"bestellen",qty:1});if(v&&v.title)await safe(()=>add("items",v))}
   if(a==="newPaint")newPaint();
+  if(a==="newStore"){const v=await form("Nieuwe winkel",[{k:"name",label:"Naam",full:true,ph:"bijv. Gamma, IKEA, Praxis, Action"},{k:"notes",label:"Notitie",type:"textarea",full:true}]);if(v&&v.name)await safe(()=>add("stores",{name:v.name,notes:v.notes||"",order:S.stores.length}))}
   if(a==="newSh"){const v=await form("Smarthome toevoegen",shFields(),{kind:"Hardware",status:"idee",qty:1});if(v&&v.title)await safe(()=>add("sh",v))}
   if(a==="delPlan"){if(await confirmBox("Deze plattegrond verwijderen?")){await safe(()=>del("plans",d.id));planSel=null}}
   if(a==="chatClear"){if(await confirmBox("Het gesprek wissen?","Wissen"))await safe(()=>setDoc("chat","smarthome",{messages:[]}))}
@@ -748,6 +847,7 @@ document.addEventListener("change",async e=>{
   if(el.dataset.set){const s=settings();const v=el.dataset.set==="budget"?num(el.value):el.value;await safe(()=>setDoc("settings","main",{keyDate:s.keyDate,moveDate:s.moveDate,budget:s.budget,[el.dataset.set]:v}));return}
   if(el.dataset.itemStatus){await safe(()=>upd("items",el.dataset.itemStatus,{status:el.value}));return}
   if(el.dataset.shStatus){await safe(()=>upd("sh",el.dataset.shStatus,{status:el.value}));return}
+  if(el.dataset.shopdone){await shopToggle(el.dataset.shopdone,el.checked);return}
   if(el.dataset.paintBought){await safe(()=>upd("paints",el.dataset.paintBought,{bought:el.checked}));return}
   if(el.id==="batchPano"&&el.files.length){const files=[...el.files];el.value="";
     await withBusy("Foto's verwerken…",async tt=>{let i=0;for(const f of files){i++;tt.textContent=`Foto ${i} van ${files.length} verwerken en uploaden…`;
