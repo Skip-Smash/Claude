@@ -775,7 +775,7 @@ function viewSmart(){
      ${list.length?list.map(s=>`<div class="task"><div class="t" data-edit-sh="${s.id}"><div class="tt"><b>${esc(s.title)}</b></div><div class="meta">${s.roomId?`<span class="tape">${esc(roomName(s.roomId))}</span>`:""}${s.protocol?`<span class="mono">${esc(s.protocol)}</span>`:""}${num(s.price)?`<span class="mono">${eur(num(s.qty||1)*num(s.price))}</span>`:""}${s.notes?`<span>${esc(s.notes.slice(0,90))}${s.notes.length>90?"…":""}</span>`:""}</div></div>
      <select data-sh-status="${s.id}" aria-label="Status" style="width:auto;padding:4px 6px;font-size:13px">${SH_STATUS.map(([v,l])=>`<option value="${v}" ${s.status===v?"selected":""}>${l}</option>`).join("")}</select></div>`).join(""):`<p class="muted small">Nog niets.</p>`}</section>`).join("")}</div>
    <section class="card stack"><div class="row between"><h2>Sparren met Claude</h2>${chat.length?`<button class="btn sm ghost" data-act="chatClear">Wis gesprek</button>`:""}</div>
-    ${sample?`<div class="chat" id="chatlog">${chat.length?chat.map(m=>`<div class="msg ${m.role==="user"?"u":"a"}">${esc(m.content)}</div>`).join(""):`<div class="muted small">Vraag bijvoorbeeld: “Ik wil met Home Assistant beginnen. Welke hardware heb ik nodig voor slimme verlichting in de woonkamer en hal, en wat kost dat ongeveer?”</div>`}<div class="msg a" id="chatlive" hidden></div></div>
+    ${sample?`<div class="chat" id="chatlog">${chat.length?chat.map(m=>`<div class="msg ${m.role==="user"?"u":"a"}">${esc(m.content)}</div>`).join(""):`<div class="muted small">Tip: zeg “zet dat maar op de lijst”, dan voegt Claude het direct toe aan het smarthome-plan, de bestellijst (per winkel) of de planning.<br><br>Vraag bijvoorbeeld: “Ik wil met Home Assistant beginnen. Welke hardware heb ik nodig voor slimme verlichting in de woonkamer en hal, en wat kost dat ongeveer?”</div>`}<div class="msg a" id="chatlive" hidden></div></div>
     <form class="addline" id="chatform"><textarea id="chatin" rows="2" placeholder="Stel je vraag of beschrijf je idee…" style="min-height:44px"></textarea><button class="btn primary" id="chatsend">Stuur</button></form>
     ${chat.length?`<button class="btn sm" data-act="chatToPlan">Zet de voorstellen uit dit gesprek in het plan</button>`:""}
     <p class="small muted">Het gesprek wordt gedeeld bewaard. Claude krijgt jullie huidige plan en kamers mee als context.</p>`:`<p class="muted">Sparren met Claude is in deze weergave niet beschikbaar. Open de app op claude.ai.</p>`}
@@ -1011,11 +1011,34 @@ async function sendChat(){
   await safe(()=>setDoc("chat","smarthome",{messages:msgs}));
   const live=()=>$("#chatlive");
   try{
-    const input=[{role:"user",content:houseContext()+"\n\n(Begin van het gesprek.)"},{role:"assistant",content:"Helder. Waar kan ik mee helpen?"},...msgs];
-    const {text}=await sample(input,{cache:false,onText:({text})=>{const l=live();if(l){l.hidden=false;l.textContent=text;const cl=$("#chatlog");if(cl)cl.scrollTop=cl.scrollHeight}}});
+    let canTools=false;try{canTools=!!(await sample.limits()).tools}catch(e){}
+    const added=[];const tools=canTools?chatTools(added):undefined;
+    const input=[{role:"user",content:houseContext()+(canTools?TOOL_RULES:"")+"\n\n(Begin van het gesprek.)"},{role:"assistant",content:"Helder. Waar kan ik mee helpen?"},...msgs];
+    const res=await sample(input,{...(tools?{tools}:{cache:false}),onText:({text})=>{const l=live();if(l){l.hidden=false;l.textContent=text;const cl=$("#chatlog");if(cl)cl.scrollTop=cl.scrollHeight}}});
+    let text=res.text;if(added.length)text+="\n\n✓ Toegevoegd:\n"+added.map(a=>"• "+a).join("\n");
     await safe(()=>setDoc("chat","smarthome",{messages:[...msgs,{role:"assistant",content:text}].slice(-40)}));
+    if(added.length)toast(`${added.length} ding${added.length===1?"":"en"} toegevoegd aan de lijsten`);
   }catch(e){const l=live();if(l)l.hidden=true;toast(e.code==="not_granted"?"Je hebt geen toestemming gegeven om Claude te vragen.":e.code==="rate_limited"?"Even te veel vragen achter elkaar. Probeer het zo opnieuw.":"Claude kon niet antwoorden. Probeer het opnieuw.")}
   finally{chatBusy=false;const l=live();if(l)l.hidden=true}
+}
+const TOOL_RULES=`
+
+Je hebt gereedschap om dingen direct in de app te zetten: het smarthome-plan (add_to_plan), de bestellijst/boodschappenlijst per winkel (add_to_shopping) en de planning (add_task). Gebruik het alleen als de gebruiker erom vraagt of instemt ("zet maar op de lijst", "voeg toe", "doe maar"). Vraag bij twijfel eerst. Gebruik kamernamen en winkelnamen zoals ze heten; een nieuwe winkelnaam wordt automatisch aangemaakt. Zeg na het toevoegen kort wat je hebt toegevoegd.`;
+function roomIdByName(n){n=String(n||"").trim().toLowerCase();if(!n)return"";const r=S.rooms.find(x=>String(x.name).toLowerCase()===n)||S.rooms.find(x=>String(x.name).toLowerCase().includes(n)||n.includes(String(x.name).toLowerCase()));return r?r.id:""}
+async function storeIdByName(n){n=String(n||"").trim();if(!n)return"";const f=S.stores.find(x=>String(x.name).toLowerCase()===n.toLowerCase());if(f)return f.id;return await add("stores",{name:n,notes:"",order:S.stores.length})}
+function chatTools(added){
+  const arr=(o,k)=>Array.isArray(o&&o[k])?o[k].slice(0,25):[];
+  return [
+   {name:"add_to_plan",description:"Zet onderdelen in het smarthome-plan (hardware, software, automatiseringen of ideeën).",
+    inputSchema:{type:"object",properties:{items:{type:"array",items:{type:"object",properties:{title:{type:"string"},kind:{type:"string",enum:SH_KINDS},room:{type:"string"},protocol:{type:"string"},qty:{type:"number"},price:{type:"number",description:"indicatieve prijs per stuk in euro"},status:{type:"string",enum:SH_STATUS.map(x=>x[0])},store:{type:"string"},notes:{type:"string"}},required:["title"]}}},required:["items"]},
+    execute:async inp=>{const done=[];for(const o of arr(inp,"items")){const st=await storeIdByName(o.store);await add("sh",{title:String(o.title).slice(0,120),kind:SH_KINDS.includes(o.kind)?o.kind:"Hardware",roomId:roomIdByName(o.room),protocol:String(o.protocol||""),qty:num(o.qty)||1,price:num(o.price),status:SH_STATUS.some(x=>x[0]===o.status)?o.status:"idee",store:st,notes:String(o.notes||"")});done.push(o.title);added.push("Smarthome-plan: "+o.title)}return{toegevoegd:done}}},
+   {name:"add_to_shopping",description:"Zet producten op de bestellijst, eventueel bij een winkel zodat ze op die boodschappenlijst komen.",
+    inputSchema:{type:"object",properties:{items:{type:"array",items:{type:"object",properties:{title:{type:"string"},room:{type:"string"},store:{type:"string"},qty:{type:"number"},price:{type:"number"},cat:{type:"string",enum:ITEM_CATS},work:{type:"string",enum:WORK_OPTS.map(x=>x[0])},link:{type:"string"},notes:{type:"string"}},required:["title"]}}},required:["items"]},
+    execute:async inp=>{const done=[];for(const o of arr(inp,"items")){const st=await storeIdByName(o.store);await add("items",{title:String(o.title).slice(0,120),roomId:roomIdByName(o.room),store:st,qty:num(o.qty)||1,price:num(o.price),cat:ITEM_CATS.includes(o.cat)?o.cat:"Smarthome",status:"bestellen",work:WORK_OPTS.some(x=>x[0]===o.work)?o.work:"",link:/^https?:\/\//.test(o.link||"")?o.link:"",notes:String(o.notes||"")});done.push(o.title);added.push("Bestellijst"+(o.store?` (${o.store})`:"")+": "+o.title)}return{toegevoegd:done}}},
+   {name:"add_task",description:"Zet een taak in de planning.",
+    inputSchema:{type:"object",properties:{tasks:{type:"array",items:{type:"object",properties:{title:{type:"string"},phase:{type:"string",enum:PHASES.map(x=>x.id)},room:{type:"string"},date:{type:"string",description:"YYYY-MM-DD, optioneel"},notes:{type:"string"}},required:["title"]}}},required:["tasks"]},
+    execute:async inp=>{const done=[];for(const o of arr(inp,"tasks")){await add("tasks",{title:String(o.title).slice(0,160),phase:PHASES.some(x=>x.id===o.phase)?o.phase:"na",roomId:roomIdByName(o.room),date:/^\d{4}-\d{2}-\d{2}$/.test(o.date||"")?o.date:"",notes:String(o.notes||""),done:false});done.push(o.title);added.push("Planning: "+o.title)}return{toegevoegd:done}}}
+  ];
 }
 async function chatToPlan(btn){
   const msgs=((S.chat.find(c=>c.id==="smarthome")||{}).messages||[]);if(!msgs.length||!sample)return;
