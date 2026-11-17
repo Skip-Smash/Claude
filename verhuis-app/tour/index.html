@@ -1,0 +1,182 @@
+<title>Rondleiding Ons Nieuwe Huis</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: volledig scherm 360°-viewer; bovenbalk met kamernaam, onderbalk met kamers en plattegrond. Eén donkere look, zelfde palet als de verhuisapp. */
+:root{
+  --bg:#1D1714; --panel:rgba(32,26,22,.82); --panel-solid:#2A2320; --ink:#F3EEE7; --muted:#B6A99C; --line:rgba(255,255,255,.14);
+  --accent:#E0703F; --accent-ink:#1C0F08; --olive:#5B5739;
+  --f-display:"Instrument Serif", Georgia, "Times New Roman", serif;
+  --f-body:"Instrument Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;background:var(--bg);color:var(--ink);margin:0}
+body{font-family:var(--f-body);font-size:15px;overflow:hidden}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#stage{position:fixed;inset:0;touch-action:none;cursor:grab}
+#stage:active{cursor:grabbing}
+#stage canvas{display:block;width:100%;height:100%}
+#fade{position:fixed;inset:0;background:var(--bg);opacity:0;pointer-events:none;transition:opacity .35s ease}
+#fade.on{opacity:1}
+.top{position:fixed;top:0;left:0;right:0;padding:calc(12px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 12px max(16px,env(safe-area-inset-left,0px));display:flex;align-items:center;gap:12px;background:linear-gradient(rgba(20,16,13,.75),transparent);pointer-events:none}
+.top>*{pointer-events:auto}
+.brand{font-family:var(--f-display);font-size:20px;white-space:nowrap}
+.brand em{font-style:italic}
+.room{margin-left:auto;text-align:right;min-width:0}
+.room .eb{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.room h1{font-family:var(--f-display);font-weight:400;font-size:clamp(24px,5vw,34px);margin:0;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bottom{position:fixed;left:0;right:0;bottom:0;padding:10px max(12px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:10px;align-items:center;background:linear-gradient(transparent,rgba(20,16,13,.8));pointer-events:none}
+.bottom>*{pointer-events:auto}
+.chips{display:flex;gap:6px;overflow-x:auto;max-width:100%;padding:4px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-radius:999px;padding:8px 14px;font-weight:600;font-size:13px;cursor:pointer;white-space:nowrap}
+.chip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.bar{display:flex;gap:8px}
+.pill{border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-radius:999px;padding:10px 16px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.pill svg{flex:none}
+.hint{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--panel);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:16px;padding:12px 16px;font-size:14px;text-align:center;pointer-events:none;transition:opacity .6s;max-width:calc(100% - 32px)}
+.hint.off{opacity:0}
+/* intro */
+#intro{position:fixed;inset:0;display:grid;place-items:center;padding:24px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px));background:rgba(20,16,13,.55);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+#intro .card{background:var(--olive);border-radius:28px;padding:28px 24px 22px;max-width:440px;width:100%;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 60px rgba(0,0,0,.45)}
+#intro h2{font-family:var(--f-display);font-weight:400;font-size:clamp(34px,8vw,46px);line-height:1.04;margin:0}
+#intro h2 em{font-style:italic}
+#intro p{margin:0;opacity:.9;line-height:1.5}
+#intro .go{background:#fff;color:#1B1814;border:0;border-radius:999px;padding:15px;font-weight:600;font-size:16px;cursor:pointer;margin-top:4px}
+#intro .small{font-size:13px;opacity:.75}
+/* plattegrond */
+#plan{position:fixed;inset:0;display:none;align-items:flex-end;justify-content:center;background:rgba(10,8,6,.6)}
+#plan.open{display:flex}
+#plan .sheet{background:var(--panel-solid);border-radius:24px 24px 0 0;width:min(560px,100%);max-height:88vh;overflow-y:auto;padding:16px max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:12px}
+#plan .head{display:flex;justify-content:space-between;align-items:center}
+#plan h3{font-family:var(--f-display);font-weight:400;font-size:26px;margin:0}
+.floors{display:flex;gap:6px;flex-wrap:wrap}
+.floors .chip{background:var(--bg)}
+.floors .chip.on{background:var(--accent)}
+.planbox{position:relative;background:#fff;border-radius:16px;overflow:hidden}
+.planbox img{display:block;width:100%;height:auto}
+.pin{position:absolute;transform:translate(-50%,-50%);border:0;border-radius:999px;padding:6px 11px;font-size:12px;font-weight:600;background:#2A2320;color:#F3EEE7;cursor:pointer;white-space:nowrap;box-shadow:0 3px 10px rgba(0,0,0,.3)}
+.pin.on{background:var(--accent);color:var(--accent-ink)}
+.x{border:1px solid var(--line);background:transparent;border-radius:999px;width:38px;height:38px;cursor:pointer;font-size:18px}
+.err{position:fixed;inset:0;display:grid;place-items:center;padding:24px;text-align:center;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){#fade,.hint{transition:none}}
+</style>
+
+<div id="stage" aria-label="360°-weergave van de kamer"></div>
+<div id="fade"></div>
+<div class="top"><div class="brand">Ons <em>nieuwe</em> huis</div><div class="room"><div class="eb" id="floor"></div><h1 id="rname">Rondleiding</h1></div></div>
+<div class="hint off" id="hint">Sleep om rond te kijken · tik op een label om verder te lopen</div>
+<div class="bottom">
+  <div class="chips" id="chips" role="tablist" aria-label="Kamers"></div>
+  <div class="bar"><button class="pill" id="planbtn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M11 5v6H4M11 15v4M15 11h5"/></svg>Plattegrond</button></div>
+</div>
+<div id="plan" role="dialog" aria-modal="true" aria-label="Plattegrond"><div class="sheet"><div class="head"><h3>Plattegrond</h3><button class="x" id="planx" aria-label="Sluiten">✕</button></div><div class="floors" id="floors"></div><div class="planbox" id="planbox"></div><p style="margin:0;color:var(--muted);font-size:13px">Tik op een ruimte om erheen te gaan.</p></div></div>
+<div id="intro"><div class="card"><h2>Welkom in ons <em>nieuwe</em> huis.</h2><p>Loop zelf door het huis. Sleep om rond te kijken, en tik op een label bij een deur of trap om naar de volgende ruimte te gaan.</p><button class="go" id="go">Kom binnen</button><div class="small">Werkt op telefoon en computer · knijp of scroll om in te zoomen</div></div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+"use strict";
+const FLOORS={bg:{name:"Begane grond",img:"plan/plan-begane-grond.jpg"},v1:{name:"Eerste verdieping",img:"plan/plan-eerste-verdieping.jpg"},v2:{name:"Tweede verdieping",img:"plan/plan-tweede-verdieping.jpg"}};
+const ROOMS=[
+ {id:"hal",name:"Hal",floor:"bg",x:.368,y:.64,links:[["woonkamer","Woonkamer",.105,.5],["overloop","Trap omhoog",.99,.45]]},
+ {id:"woonkamer",name:"Woonkamer",floor:"bg",x:.577,y:.737,links:[["hal","Hal",.965,.5],["keuken","Keuken",.21,.52]]},
+ {id:"keuken",name:"Keuken",floor:"bg",x:.378,y:.391,links:[["woonkamer","Woonkamer",.09,.55]]},
+ {id:"overloop",name:"Overloop",floor:"v1",x:.375,y:.514,links:[["hal","Trap omlaag",.575,.62],["slaapkamer-groen","Kleine slaapkamer",.715,.55],["grote-slaapkamer","Grote slaapkamer",.94,.55],["slaapkamer-voor","Slaapkamer voorkant",.18,.55],["badkamer","Badkamer",.3,.55],["overloop-zolder","Trap omhoog",.43,.45]]},
+ {id:"slaapkamer-groen",name:"Kleine slaapkamer",floor:"v1",x:.328,y:.33,links:[["overloop","Overloop",.945,.5]]},
+ {id:"grote-slaapkamer",name:"Grote slaapkamer",floor:"v1",x:.556,y:.335,links:[["overloop","Overloop",.14,.55]]},
+ {id:"slaapkamer-voor",name:"Slaapkamer voorkant",floor:"v1",x:.515,y:.742,links:[["overloop","Overloop",.025,.55]]},
+ {id:"badkamer",name:"Badkamer",floor:"v1",x:.304,y:.713,links:[["overloop","Overloop",.04,.55]]},
+ {id:"overloop-zolder",name:"Overloop zolder",floor:"v2",x:.303,y:.434,links:[["zolderkamer","Zolderkamer",.2,.55],["overloop","Trap omlaag",.6,.62]]},
+ {id:"zolderkamer",name:"Zolderkamer",floor:"v2",x:.532,y:.524,links:[["overloop-zolder","Overloop zolder",.965,.55]]}
+];
+const byId=id=>ROOMS.find(r=>r.id===id);
+const $=s=>document.querySelector(s);
+const TAU=Math.PI*2;
+const uvToDir=(u,v)=>{const p=u*TAU,t=v*Math.PI;return[Math.cos(p)*Math.sin(t),Math.cos(t),Math.sin(p)*Math.sin(t)]};
+
+if(typeof THREE==="undefined"){document.body.insertAdjacentHTML("beforeend",`<div class="err">De 360°-weergave kon niet laden. Controleer je internetverbinding en laad de pagina opnieuw.</div>`)}
+else start();
+
+function start(){
+  const stage=$("#stage");
+  const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));stage.appendChild(renderer.domElement);
+  const scene=new THREE.Scene();const cam=new THREE.PerspectiveCamera(80,1,1,1100);
+  const geo=new THREE.SphereGeometry(500,96,64);geo.scale(-1,1,1);
+  const mat=new THREE.MeshBasicMaterial({color:0x1d1714});const mesh=new THREE.Mesh(geo,mat);scene.add(mesh);
+  const labels=new THREE.Group();scene.add(labels);
+  const loader=new THREE.TextureLoader();const cache={};
+  let lon=0,lat=0,fov=80,dirty=true,cur=null,busy=false;
+  const load=id=>cache[id]||(cache[id]=new Promise((res,rej)=>loader.load(`pano/${id}.jpg`,t=>{t.minFilter=THREE.LinearFilter;t.generateMipmaps=false;res(t)},undefined,rej)));
+  const resize=()=>{const w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix();dirty=true};
+  window.addEventListener("resize",resize);resize();
+
+  function label(text,u,v){const c=document.createElement("canvas");c.width=512;c.height=128;const x=c.getContext("2d");
+    x.font="600 44px 'Instrument Sans', system-ui, sans-serif";const tw=Math.min(380,x.measureText(text).width);const w=tw+130,h=96,x0=(512-w)/2,y0=16;
+    x.fillStyle="rgba(28,22,18,.82)";x.strokeStyle="rgba(255,255,255,.95)";x.lineWidth=5;x.beginPath();x.roundRect?x.roundRect(x0,y0,w,h,48):x.rect(x0,y0,w,h);x.fill();x.stroke();
+    x.fillStyle="#E0703F";x.beginPath();x.arc(x0+50,y0+h/2,24,0,TAU);x.fill();
+    x.fillStyle="#1C0F08";x.beginPath();const cx=x0+50,cy=y0+h/2;x.moveTo(cx-10,cy+9);x.lineTo(cx,cy-11);x.lineTo(cx+10,cy+9);x.lineTo(cx,cy+3);x.closePath();x.fill();
+    x.fillStyle="#fff";x.textBaseline="middle";x.fillText(text,x0+92,cy+2,380);
+    const t=new THREE.CanvasTexture(c);t.minFilter=THREE.LinearFilter;const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthTest:false,sizeAttenuation:false,transparent:true}));
+    const d=uvToDir(u,v);sp.position.set(d[0]*450,d[1]*450,d[2]*450);sp.scale.set(.42,.105,1);sp.renderOrder=10;return sp}
+
+  async function go(id,fromId){
+    if(busy||!byId(id))return;busy=true;const r=byId(id);
+    $("#fade").classList.add("on");
+    let tex;try{[tex]=await Promise.all([load(id),new Promise(s=>setTimeout(s,cur?300:0))])}catch(e){$("#fade").classList.remove("on");busy=false;return}
+    mat.map=tex;mat.color.set(0xffffff);mat.needsUpdate=true;
+    while(labels.children.length){const c=labels.children.pop();c.material.map.dispose();c.material.dispose()}
+    r.links.forEach(([to,txt,u,v])=>{const s=label(txt,u,v);s.userData.to=to;labels.add(s)});
+    const back=fromId?r.links.find(l=>l[0]===fromId):null;
+    lon=back?back[2]*360+180:(r.lon??0);lat=0;fov=80;cur=id;dirty=true;
+    $("#rname").textContent=r.name;$("#floor").textContent=FLOORS[r.floor].name;
+    document.querySelectorAll("#chips .chip").forEach(c=>c.classList.toggle("on",c.dataset.id===id));
+    const on=document.querySelector(`#chips .chip[data-id="${id}"]`);if(on)on.scrollIntoView({inline:"center",block:"nearest",behavior:"smooth"});
+    try{history.replaceState(null,"","#"+id)}catch(e){}
+    setTimeout(()=>$("#fade").classList.remove("on"),60);busy=false;
+    r.links.forEach(([to])=>load(to).catch(()=>{}));
+  }
+  window.__go=go;
+
+  // kamerchips
+  $("#chips").innerHTML=ROOMS.map(r=>`<button class="chip" data-id="${r.id}" role="tab">${r.name}</button>`).join("");
+  $("#chips").addEventListener("click",e=>{const b=e.target.closest(".chip");if(b)go(b.dataset.id)});
+
+  // plattegrond
+  let floor="bg";
+  const drawPlan=()=>{$("#floors").innerHTML=Object.entries(FLOORS).map(([k,f])=>`<button class="chip ${k===floor?"on":""}" data-f="${k}">${f.name}</button>`).join("");
+    $("#planbox").innerHTML=`<img src="${FLOORS[floor].img}" alt="Plattegrond ${FLOORS[floor].name}">`+ROOMS.filter(r=>r.floor===floor).map(r=>`<button class="pin ${r.id===cur?"on":""}" data-id="${r.id}" style="left:${r.x*100}%;top:${r.y*100}%">${r.name}</button>`).join("")};
+  $("#planbtn").onclick=()=>{floor=(byId(cur)||{}).floor||"bg";drawPlan();$("#plan").classList.add("open")};
+  $("#planx").onclick=()=>$("#plan").classList.remove("open");
+  $("#plan").addEventListener("click",e=>{if(e.target.id==="plan"){$("#plan").classList.remove("open");return}
+    const f=e.target.closest("[data-f]");if(f){floor=f.dataset.f;drawPlan();return}
+    const p=e.target.closest(".pin");if(p){$("#plan").classList.remove("open");go(p.dataset.id)}});
+
+  // rondkijken
+  const ptrs=new Map();let st=null,pinch=null;
+  stage.addEventListener("pointerdown",e=>{stage.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(ptrs.size===1)st={x:e.clientX,y:e.clientY,lon,lat,t:Date.now(),moved:false};
+    if(ptrs.size===2){const [a,b]=[...ptrs.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y),fov};if(st)st.moved=true}hideHint()});
+  stage.addEventListener("pointermove",e=>{if(!ptrs.has(e.pointerId))return;ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(ptrs.size===2&&pinch){const [a,b]=[...ptrs.values()];fov=Math.max(30,Math.min(100,pinch.fov*pinch.d/Math.hypot(a.x-b.x,a.y-b.y)));dirty=true;return}
+    if(st&&ptrs.size===1){const dx=e.clientX-st.x,dy=e.clientY-st.y;if(Math.hypot(dx,dy)>6)st.moved=true;if(st.moved){const k=.1*fov/80;lon=st.lon-dx*k;lat=Math.max(-85,Math.min(85,st.lat+dy*k));dirty=true}}});
+  const up=e=>{if(!ptrs.has(e.pointerId))return;ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;if(ptrs.size===0&&st){if(!st.moved&&Date.now()-st.t<600)tap(e);st=null}};
+  stage.addEventListener("pointerup",up);stage.addEventListener("pointercancel",e=>{ptrs.delete(e.pointerId);st=null;pinch=null});
+  stage.addEventListener("wheel",e=>{e.preventDefault();fov=Math.max(30,Math.min(100,fov+e.deltaY*.05));dirty=true},{passive:false});
+  window.addEventListener("keydown",e=>{if($("#intro"))return;if(e.key==="ArrowLeft"){lon-=5;dirty=true}else if(e.key==="ArrowRight"){lon+=5;dirty=true}else if(e.key==="Escape")$("#plan").classList.remove("open")});
+  function tap(e){const r=stage.getBoundingClientRect();let best=null;
+    labels.children.forEach(s=>{const q=s.position.clone().project(cam);if(q.z>1)return;const x=(q.x+1)/2*r.width,y=(1-q.y)/2*r.height;const dx=Math.abs(x-(e.clientX-r.left)),dy=Math.abs(y-(e.clientY-r.top));if(dx<100&&dy<34&&(!best||dx+dy<best.d))best={d:dx+dy,to:s.userData.to}});
+    if(best)go(best.to,cur)}
+  let hintT;function hideHint(){$("#hint").classList.add("off");clearTimeout(hintT)}
+
+  // start
+  const startId=(location.hash||"").slice(1);
+  const first=byId(startId)?startId:"hal";
+  load(first).catch(()=>{});
+  $("#go").onclick=async()=>{$("#intro").remove();await go(first);$("#hint").classList.remove("off");hintT=setTimeout(hideHint,5000)};
+  (function loop(){if(dirty){dirty=false;const p=lon*Math.PI/180,t=(90-lat)*Math.PI/180;cam.fov=fov;cam.updateProjectionMatrix();cam.lookAt(Math.cos(p)*Math.sin(t),Math.cos(t),Math.sin(p)*Math.sin(t));renderer.render(scene,cam)}requestAnimationFrame(loop)})();
+  setInterval(()=>{if(!ptrs.size&&!$("#intro")&&cur&&$("#hint").classList.contains("off")&&!document.hidden){/* rust */}},1000);
+}
+</script>
