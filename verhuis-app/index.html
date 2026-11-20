@@ -209,6 +209,17 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:60
 .wkcol{position:relative;background:repeating-linear-gradient(var(--card2) 0 43px,var(--line) 43px 44px);border-radius:8px;cursor:pointer;min-width:0}
 .wkev{position:absolute;padding:1px}
 .wkev .cev{height:100%;white-space:normal;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start}
+.dayv{display:flex;flex-direction:column;gap:8px}
+.daybig{background:var(--tape);color:var(--tape-ink);border-radius:10px;padding:8px 12px;font-weight:600}
+.dayall{display:grid;grid-template-columns:52px 1fr;gap:6px;align-items:start;background:var(--card2);border-radius:10px;padding:6px;cursor:pointer}
+.dayallist{display:flex;flex-direction:column;gap:4px;min-width:0}
+.dayallist .cev{font-size:14px;padding:6px 8px;white-space:normal}
+.daybody{display:grid;grid-template-columns:52px 1fr;gap:6px;position:relative;overflow-y:auto;max-height:70vh}
+.daycol .cev{font-size:14px;padding:6px 8px}
+.dayend{position:absolute;right:8px;bottom:4px;font-size:11px;opacity:.75;pointer-events:none}
+.nowline{position:absolute;left:0;right:0;height:2px;background:var(--tape);pointer-events:none}
+.nowline::before{content:"";position:absolute;left:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--tape)}
+.wkh,.wlh{cursor:pointer}
 .wklist{display:none;flex-direction:column;gap:8px}
 .wld{background:var(--card2);border-radius:12px;padding:8px 10px;display:flex;flex-direction:column;gap:5px}
 .wld.today{outline:1px solid var(--tape)}
@@ -721,6 +732,22 @@ function viewAgenda(){
       const ev=byDay[k]||[];const big=k===s.keyDate?"key":k===s.moveDate?"move":"";
       cells+=`<div class="cday ${out?"out":""} ${k===today?"today":""} ${big?"big-"+big:""}" data-dropday="${k}" data-calday="${k}"><div class="cdn">${d.getDate()}</div>${ev.slice(0,3).map(e=>calChip(e,true)).join("")}${ev.length>3?`<button class="cmore" data-calweek="${k}">+${ev.length-3} meer</button>`:""}</div>`}
     body=`<div class="cgrid"><div class="cwd">${WD.map(w=>`<div>${w}</div>`).join("")}</div><div class="cmonth">${cells}</div></div>`;
+  }else if(calMode==="dag"){
+    const k=iso(ref);const ev=byDay[k]||[];const allday=ev.filter(e=>!e.time),timed=ev.filter(e=>e.time);
+    title=ref.toLocaleDateString("nl-NL",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+    const H0=Math.min(7,...timed.map(e=>Math.floor(tmin(e.time)/60))),H1=23,PX=60;
+    const lanes=[];timed.forEach(e=>{const a=tmin(e.time),b=Math.max(a+30,tmin(e.end)||a+60);let l=0;while(lanes[l]&&lanes[l]>a)l++;lanes[l]=b;e._a=a;e._b=b;e._l=l});const nl=Math.max(1,lanes.length);
+    const nowM=k===today?new Date().getHours()*60+new Date().getMinutes():null;
+    const big=k===s.keyDate?"🔑 Sleuteldag":k===s.moveDate?"📦 Verhuisdag":"";
+    body=`<div class="dayv">
+      ${big?`<div class="daybig">${big}</div>`:""}
+      <div class="dayall" data-dropday="${k}" data-calday="${k}"><div class="wkl">hele dag</div><div class="dayallist">${allday.filter(e=>e.kind!=="key"&&e.kind!=="move").map(e=>calChip(e)).join("")||`<span class="small muted">Tik hier om iets toe te voegen</span>`}</div></div>
+      <div class="daybody" style="height:${(H1-H0)*PX}px">
+        <div class="wkhours">${[...Array(H1-H0)].map((_,i)=>`<div style="height:${PX}px">${String(H0+i).padStart(2,"0")}:00</div>`).join("")}</div>
+        <div class="wkcol daycol" data-dropday="${k}" data-calday="${k}" style="background:repeating-linear-gradient(var(--card2) 0 ${PX-1}px,var(--line) ${PX-1}px ${PX}px)">
+          ${timed.map(e=>{const top=Math.max(0,(e._a-H0*60)/60*PX),h=Math.max(30,(e._b-e._a)/60*PX-2);return `<div class="wkev" style="top:${top}px;height:${h}px;left:${e._l/nl*100}%;width:${100/nl}%">${calChip(e)}${e.end?`<span class="dayend">tot ${esc(e.end)}</span>`:""}</div>`}).join("")}
+          ${nowM!==null&&nowM>=H0*60&&nowM<H1*60?`<div class="nowline" style="top:${(nowM-H0*60)/60*PX}px"></div>`:""}
+        </div></div></div>`;
   }else{
     const start=monStart(ref);const days=[...Array(7)].map((_,i)=>addDays(start,i));
     title=`${days[0].toLocaleDateString("nl-NL",{day:"numeric",month:"short"})} – ${days[6].toLocaleDateString("nl-NL",{day:"numeric",month:"short",year:"numeric"})}`;
@@ -730,16 +757,16 @@ function viewAgenda(){
       const lanes=[];timed.forEach(e=>{const a=tmin(e.time),b=Math.max(a+30,tmin(e.end)||a+60);let l=0;while(lanes[l]&&lanes[l]>a)l++;lanes[l]=b;e._a=a;e._b=b;e._l=l});const nl=Math.max(1,lanes.length);
       return {d,k,allday,timed,nl}});
     body=`<div class="wk">
-      <div class="wkhead"><div></div>${cols.map(c=>`<div class="wkh ${c.k===today?"today":""} ${c.k===s.keyDate?"big-key":c.k===s.moveDate?"big-move":""}" data-calday="${c.k}"><span>${WD[(c.d.getDay()+6)%7]}</span><b>${c.d.getDate()}</b></div>`).join("")}</div>
+      <div class="wkhead"><div></div>${cols.map(c=>`<div class="wkh ${c.k===today?"today":""} ${c.k===s.keyDate?"big-key":c.k===s.moveDate?"big-move":""}" data-calgoday="${c.k}" title="Dag bekijken"><span>${WD[(c.d.getDay()+6)%7]}</span><b>${c.d.getDate()}</b></div>`).join("")}</div>
       <div class="wkall"><div class="wkl">hele dag</div>${cols.map(c=>`<div class="wkad" data-dropday="${c.k}" data-calday="${c.k}">${c.allday.map(e=>calChip(e)).join("")}</div>`).join("")}</div>
       <div class="wkbody" style="height:${(H1-H0)*PX}px"><div class="wkhours">${[...Array(H1-H0)].map((_,i)=>`<div style="height:${PX}px">${String(H0+i).padStart(2,"0")}:00</div>`).join("")}</div>
       ${cols.map(c=>`<div class="wkcol" data-dropday="${c.k}" data-calday="${c.k}">${c.timed.map(e=>{const top=Math.max(0,(e._a-H0*60)/60*PX),h=Math.max(22,(e._b-e._a)/60*PX-2);return `<div class="wkev" style="top:${top}px;height:${h}px;left:${e._l/c.nl*100}%;width:${100/c.nl}%">${calChip(e)}</div>`}).join("")}</div>`).join("")}</div>
-      <div class="wklist">${cols.map(c=>{const ev=[...c.allday,...c.timed];return `<div class="wld ${c.k===today?"today":""}" data-dropday="${c.k}"><div class="wlh" data-calday="${c.k}"><b>${WD[(c.d.getDay()+6)%7]} ${c.d.getDate()} ${c.d.toLocaleDateString("nl-NL",{month:"short"})}</b>${c.k===s.keyDate?" <span>🔑 sleutel</span>":c.k===s.moveDate?" <span>📦 verhuizen</span>":""}</div>${ev.filter(e=>e.kind!=="key"&&e.kind!=="move").map(e=>calChip(e)).join("")||`<div class="small muted">—</div>`}</div>`}).join("")}</div>
+      <div class="wklist">${cols.map(c=>{const ev=[...c.allday,...c.timed];return `<div class="wld ${c.k===today?"today":""}" data-dropday="${c.k}"><div class="wlh" data-calgoday="${c.k}" title="Dag bekijken"><b>${WD[(c.d.getDay()+6)%7]} ${c.d.getDate()} ${c.d.toLocaleDateString("nl-NL",{month:"short"})}</b>${c.k===s.keyDate?" <span>🔑 sleutel</span>":c.k===s.moveDate?" <span>📦 verhuizen</span>":""}</div>${ev.filter(e=>e.kind!=="key"&&e.kind!=="move").map(e=>calChip(e)).join("")||`<div class="small muted">—</div>`}</div>`}).join("")}</div>
     </div>`;
   }
   const unplanned=S.tasks.filter(t=>!t.date&&!t.done).sort(taskSort);
   return `<div class="stack"><div class="row between"><div><h1>Agenda</h1><p class="muted">Taken, afspraken, leveringen en de grote dagen op één plek.</p></div><button class="btn primary" data-act="newEvent">+ Afspraak</button></div>
-  <div class="calbar"><div class="seg2"><button class="${calMode==="maand"?"on":""}" data-calmode="maand">Maand</button><button class="${calMode==="week"?"on":""}" data-calmode="week">Week</button></div>
+  <div class="calbar"><div class="seg2"><button class="${calMode==="maand"?"on":""}" data-calmode="maand">Maand</button><button class="${calMode==="week"?"on":""}" data-calmode="week">Week</button><button class="${calMode==="dag"?"on":""}" data-calmode="dag">Dag</button></div>
    <div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn sm" data-calnav="-1" aria-label="Vorige">‹</button><button class="btn sm" data-calnav="0">Vandaag</button><button class="btn sm" data-calnav="1" aria-label="Volgende">›</button></div>
    <h2 class="caltitle">${esc(title)}</h2>
    <div class="row" style="gap:6px"><button class="btn sm" data-caljump="${s.keyDate}">🔑 Sleutel</button><button class="btn sm" data-caljump="${s.moveDate}">📦 Verhuizen</button></div></div>
@@ -760,8 +787,9 @@ async function calOpen(ref){const [k,id]=ref.split("|");
   if(k==="event"){return eventForm(byId("events",id))}
   if(k==="item"){const it=byId("items",id);const v=await form("Product bewerken",itemFields(),it,"Verwijderen");if(!v)return;if(v.__extra){if(await confirmBox(`“${it.title}” verwijderen?`))await safe(()=>del("items",id));return}await safe(()=>upd("items",id,v))}}
 async function calNewOn(date){
-  const m=modal(`<h2>${esc(fromIso(date).toLocaleDateString("nl-NL",{weekday:"long",day:"numeric",month:"long"}))}</h2><div class="row"><button class="btn primary" id="cnt">+ Taak</button><button class="btn" id="cne">+ Afspraak</button><button class="btn ghost" id="cnw">Week bekijken</button><button class="btn ghost" id="cnx">Sluiten</button></div>`);
+  const m=modal(`<h2>${esc(fromIso(date).toLocaleDateString("nl-NL",{weekday:"long",day:"numeric",month:"long"}))}</h2><div class="row"><button class="btn primary" id="cnt">+ Taak</button><button class="btn" id="cne">+ Afspraak</button><button class="btn ghost" id="cnd">Dag bekijken</button><button class="btn ghost" id="cnw">Week bekijken</button><button class="btn ghost" id="cnx">Sluiten</button></div>`);
   $("#cnx",m).onclick=()=>m.remove();
+  $("#cnd",m).onclick=()=>{m.remove();calMode="dag";calRef=date;lsSet("calMode",calMode);lsSet("calRef",calRef);render()};
   $("#cnw",m).onclick=()=>{m.remove();calMode="week";calRef=date;lsSet("calMode",calMode);lsSet("calRef",calRef);render()};
   $("#cne",m).onclick=()=>{m.remove();eventForm(null,date)};
   $("#cnt",m).onclick=async()=>{m.remove();const v=await form("Nieuwe taak",taskFields(),{date,phase:date<=settings().keyDate?"voor":date<settings().moveDate?"sleutel":date===settings().moveDate?"verhuis":"na"});if(v&&v.title)await safe(()=>add("tasks",{...v,done:false}))};
@@ -994,7 +1022,7 @@ async function withBusy(msg,fn){const t=document.createElement("div");t.classNam
 /* ---------- events ---------- */
 document.addEventListener("click",async e=>{
   if(e.target.closest("label")&&e.target.closest("[data-open-pano]"))return;
-  const t=e.target.closest("[data-calopen],[data-calmode],[data-calnav],[data-caljump],[data-calweek],[data-calday],[data-workpdf],[data-workedit],[data-shoppdf],[data-shopmenu],[data-shopedit],[data-copy-pano],[data-dl-pano],[data-pic],[data-open-render],[data-act],[data-toggle],[data-edit-task],[data-edit-item],[data-edit-paint],[data-edit-sh],[data-tip],[data-tc],[data-pf],[data-plan],[data-place],[data-open-pano],[data-del-mood],[data-pick]");
+  const t=e.target.closest("[data-calgoday],[data-calopen],[data-calmode],[data-calnav],[data-caljump],[data-calweek],[data-calday],[data-workpdf],[data-workedit],[data-shoppdf],[data-shopmenu],[data-shopedit],[data-copy-pano],[data-dl-pano],[data-pic],[data-open-render],[data-act],[data-toggle],[data-edit-task],[data-edit-item],[data-edit-paint],[data-edit-sh],[data-tip],[data-tc],[data-pf],[data-plan],[data-place],[data-open-pano],[data-del-mood],[data-pick]");
   if(!t||!db)return;if(e.target.closest("label")&&t.dataset.openPano)return;const d=t.dataset;
   if(d.toggle!==undefined){const task=byId("tasks",d.toggle);if(task)await safe(()=>upd("tasks",task.id,{done:!task.done,doneBy:!task.done?meId:null,doneAt:!task.done?Date.now():null}));return}
   if(d.editTask){e.preventDefault();const task=byId("tasks",d.editTask);const v=await form("Taak bewerken",taskFields(),task,"Verwijderen");if(!v)return;if(v.__extra){if(await confirmBox(`“${task.title}” verwijderen?`))await safe(()=>del("tasks",task.id));return}await safe(()=>upd("tasks",task.id,v));return}
@@ -1013,8 +1041,9 @@ document.addEventListener("click",async e=>{
   if(d.pic){openPic(d.pic);return}
   if(d.shoppdf){shopPdf(d.shoppdf);return}
   if(d.calopen){e.stopPropagation();calOpen(d.calopen);return}
+  if(d.calgoday){calMode="dag";calRef=d.calgoday;lsSet("calMode",calMode);lsSet("calRef",calRef);render();return}
   if(d.calmode){calMode=d.calmode;lsSet("calMode",calMode);render();return}
-  if(d.calnav!==undefined){const n=+d.calnav;let r=calRef?fromIso(calRef):new Date();if(!n)r=new Date();else if(calMode==="maand")r=new Date(r.getFullYear(),r.getMonth()+n,1,12);else r=addDays(r,7*n);calRef=iso(r);lsSet("calRef",calRef);render();return}
+  if(d.calnav!==undefined){const n=+d.calnav;let r=calRef?fromIso(calRef):new Date();if(!n)r=new Date();else if(calMode==="maand")r=new Date(r.getFullYear(),r.getMonth()+n,1,12);else if(calMode==="dag")r=addDays(r,n);else r=addDays(r,7*n);calRef=iso(r);lsSet("calRef",calRef);render();return}
   if(d.caljump){calRef=d.caljump;lsSet("calRef",calRef);render();return}
   if(d.calweek){calMode="week";calRef=d.calweek;lsSet("calMode",calMode);lsSet("calRef",calRef);render();return}
   if(d.calday){if(e.target.closest(".cev,.cmore"))return;calNewOn(d.calday);return}
