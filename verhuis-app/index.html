@@ -210,7 +210,27 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:60
 .wkcol{position:relative;background:repeating-linear-gradient(var(--card2) 0 43px,var(--line) 43px 44px);border-radius:8px;cursor:pointer;min-width:0}
 .wkev{position:absolute;padding:1px}
 .wkev .cev{height:100%;white-space:normal;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start}
-.dayv{display:flex;flex-direction:column;gap:8px}
+.dayv{display:flex;flex-direction:column;gap:10px}
+.dphead{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.dpdate{display:flex;align-items:baseline;gap:8px;font-family:var(--f-display)}
+.dpdate b{font-size:52px;font-weight:400;line-height:1}
+.dpdate span{font-size:22px;color:var(--muted)}
+.dpdate .dpwd{text-transform:capitalize;color:var(--ink)}
+.dpgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;align-items:start}
+.dpcard{background:var(--card2);border:1px solid var(--line);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.dph{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.dph h3{font-size:21px}
+.dpadd{display:flex;gap:6px}
+.dpadd input{flex:1;min-width:0;padding:8px 12px}
+.hchips{display:flex;flex-wrap:wrap;gap:6px}
+.hchip{display:inline-flex;align-items:center;gap:4px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:5px 6px 5px 12px;font-size:14px}
+.hchip button{border:0;background:transparent;color:var(--muted);cursor:pointer;border-radius:999px;width:24px;height:24px}
+.hchip button:hover{background:var(--soft);color:var(--ink)}
+.dpcard textarea{min-height:110px;background:var(--card)}
+.dpdat{flex:none;width:52px;font-size:12px;color:var(--muted)}
+.dbadge{display:block;font-size:11px;color:var(--muted);padding-left:2px;white-space:nowrap;overflow:hidden}
+.wlh .dbadge{display:inline;margin-left:8px}
+@media (max-width:640px){.cday .dbadge{font-size:9px}}
 .daybig{background:var(--tape);color:var(--tape-ink);border-radius:10px;padding:8px 12px;font-weight:600}
 .dayall{display:grid;grid-template-columns:52px 1fr;gap:6px;align-items:start;background:var(--card2);border-radius:10px;padding:6px;cursor:pointer}
 .dayallist{display:flex;flex-direction:column;gap:4px;min-width:0}
@@ -485,7 +505,7 @@ function hexToRgb(h){h=String(h||"").replace("#","");if(h.length===3)h=h.split("
 const rgbToHex=(r,g,b)=>"#"+[r,g,b].map(v=>Math.round(v).toString(16).padStart(2,"0")).join("").toUpperCase();
 
 /* ---------- staat ---------- */
-const COLS=["rooms","photos","paints","plans","tasks","items","mood","sh","settings","chat","pics","stores","events"];
+const COLS=["rooms","photos","paints","plans","tasks","items","mood","sh","settings","chat","pics","stores","events","days"];
 const S={loaded:{}};COLS.forEach(c=>S[c]=[]);
 let db=null,assets=null,userCap=null,downloads=null,sample=null,meId=null,canUpload=false;
 const settings=()=>Object.assign({keyDate:KEY_DATE_DEFAULT,moveDate:MOVE_DATE_DEFAULT,budget:0},(S.settings.find(d=>d.id==="main")||{}));
@@ -731,7 +751,7 @@ function viewAgenda(){
     title=first.toLocaleDateString("nl-NL",{month:"long",year:"numeric"});
     let cells="";for(let i=0;i<42;i++){const d=addDays(start,i);const k=iso(d);const out=d.getMonth()!==first.getMonth();if(i===35&&out)break;
       const ev=byDay[k]||[];const big=k===s.keyDate?"key":k===s.moveDate?"move":"";
-      cells+=`<div class="cday ${out?"out":""} ${k===today?"today":""} ${big?"big-"+big:""}" data-dropday="${k}" data-calday="${k}"><div class="cdn">${d.getDate()}</div>${ev.slice(0,3).map(e=>calChip(e,true)).join("")}${ev.length>3?`<button class="cmore" data-calweek="${k}">+${ev.length-3} meer</button>`:""}</div>`}
+      cells+=`<div class="cday ${out?"out":""} ${k===today?"today":""} ${big?"big-"+big:""}" data-dropday="${k}" data-calday="${k}"><div class="cdn">${d.getDate()}</div>${dayBadge(k)}${ev.slice(0,3).map(e=>calChip(e,true)).join("")}${ev.length>3?`<button class="cmore" data-calweek="${k}">+${ev.length-3} meer</button>`:""}</div>`}
     body=`<div class="cgrid"><div class="cwd">${WD.map(w=>`<div>${w}</div>`).join("")}</div><div class="cmonth">${cells}</div></div>`;
   }else if(calMode==="dag"){
     const k=iso(ref);const ev=byDay[k]||[];const allday=ev.filter(e=>!e.time),timed=ev.filter(e=>e.time);
@@ -741,7 +761,9 @@ function viewAgenda(){
     const nowM=k===today?new Date().getHours()*60+new Date().getMinutes():null;
     const big=k===s.keyDate?"🔑 Sleuteldag":k===s.moveDate?"📦 Verhuisdag":"";
     body=`<div class="dayv">
-      ${big?`<div class="daybig">${big}</div>`:""}
+      <div class="dphead"><div class="dpdate"><span class="dpwd">${esc(ref.toLocaleDateString("nl-NL",{weekday:"long"}))}</span><b>${ref.getDate()}</b><span>${esc(ref.toLocaleDateString("nl-NL",{month:"long",year:"numeric"}))}</span></div>${big?`<div class="daybig">${big}</div>`:""}</div>
+      ${dayPlan(k)}
+      <div class="eyebrow" style="margin-top:6px">Tijdlijn</div>
       <div class="dayall" data-dropday="${k}" data-calday="${k}"><div class="wkl">hele dag</div><div class="dayallist">${allday.filter(e=>e.kind!=="key"&&e.kind!=="move").map(e=>calChip(e)).join("")||`<span class="small muted">Tik hier om iets toe te voegen</span>`}</div></div>
       <div class="daybody" style="height:${(H1-H0)*PX}px">
         <div class="wkhours">${[...Array(H1-H0)].map((_,i)=>`<div style="height:${PX}px">${String(H0+i).padStart(2,"0")}:00</div>`).join("")}</div>
@@ -762,7 +784,7 @@ function viewAgenda(){
       <div class="wkall"><div class="wkl">hele dag</div>${cols.map(c=>`<div class="wkad" data-dropday="${c.k}" data-calday="${c.k}">${c.allday.map(e=>calChip(e)).join("")}</div>`).join("")}</div>
       <div class="wkbody" style="height:${(H1-H0)*PX}px"><div class="wkhours">${[...Array(H1-H0)].map((_,i)=>`<div style="height:${PX}px">${String(H0+i).padStart(2,"0")}:00</div>`).join("")}</div>
       ${cols.map(c=>`<div class="wkcol" data-dropday="${c.k}" data-calday="${c.k}">${c.timed.map(e=>{const top=Math.max(0,(e._a-H0*60)/60*PX),h=Math.max(22,(e._b-e._a)/60*PX-2);return `<div class="wkev" style="top:${top}px;height:${h}px;left:${e._l/c.nl*100}%;width:${100/c.nl}%">${calChip(e)}</div>`}).join("")}</div>`).join("")}</div>
-      <div class="wklist">${cols.map(c=>{const ev=[...c.allday,...c.timed];return `<div class="wld ${c.k===today?"today":""}" data-dropday="${c.k}"><div class="wlh" data-calgoday="${c.k}" title="Dag bekijken"><b>${WD[(c.d.getDay()+6)%7]} ${c.d.getDate()} ${c.d.toLocaleDateString("nl-NL",{month:"short"})}</b>${c.k===s.keyDate?" <span>🔑 sleutel</span>":c.k===s.moveDate?" <span>📦 verhuizen</span>":""}</div>${ev.filter(e=>e.kind!=="key"&&e.kind!=="move").map(e=>calChip(e)).join("")||`<div class="small muted">—</div>`}</div>`}).join("")}</div>
+      <div class="wklist">${cols.map(c=>{const ev=[...c.allday,...c.timed];return `<div class="wld ${c.k===today?"today":""}" data-dropday="${c.k}"><div class="wlh" data-calgoday="${c.k}" title="Dag bekijken"><b>${WD[(c.d.getDay()+6)%7]} ${c.d.getDate()} ${c.d.toLocaleDateString("nl-NL",{month:"short"})}</b>${dayBadge(c.k)}${c.k===s.keyDate?" <span>🔑 sleutel</span>":c.k===s.moveDate?" <span>📦 verhuizen</span>":""}</div>${ev.filter(e=>e.kind!=="key"&&e.kind!=="move").map(e=>calChip(e)).join("")||`<div class="small muted">—</div>`}</div>`}).join("")}</div>
     </div>`;
   }
   const unplanned=S.tasks.filter(t=>!t.date&&!t.done).sort(taskSort);
@@ -788,13 +810,45 @@ async function calOpen(ref){const [k,id]=ref.split("|");
   if(k==="event"){return eventForm(byId("events",id))}
   if(k==="item"){const it=byId("items",id);const v=await form("Product bewerken",itemFields(),it,"Verwijderen");if(!v)return;if(v.__extra){if(await confirmBox(`“${it.title}” verwijderen?`))await safe(()=>del("items",id));return}await safe(()=>upd("items",id,v))}}
 async function calNewOn(date){
-  const m=modal(`<h2>${esc(fromIso(date).toLocaleDateString("nl-NL",{weekday:"long",day:"numeric",month:"long"}))}</h2><div class="row"><button class="btn primary" id="cnt">+ Taak</button><button class="btn" id="cne">+ Afspraak</button><button class="btn ghost" id="cnd">Dag bekijken</button><button class="btn ghost" id="cnw">Week bekijken</button><button class="btn ghost" id="cnx">Sluiten</button></div>`);
+  const m=modal(`<h2>${esc(fromIso(date).toLocaleDateString("nl-NL",{weekday:"long",day:"numeric",month:"long"}))}</h2><div class="row"><button class="btn primary" id="cnt">+ Taak</button><button class="btn" id="cne">+ Afspraak</button><button class="btn" id="cnd">Dagplan openen</button><button class="btn ghost" id="cnw">Week bekijken</button><button class="btn ghost" id="cnx">Sluiten</button></div>`);
   $("#cnx",m).onclick=()=>m.remove();
   $("#cnd",m).onclick=()=>{m.remove();calMode="dag";calRef=date;lsSet("calMode",calMode);lsSet("calRef",calRef);render()};
   $("#cnw",m).onclick=()=>{m.remove();calMode="week";calRef=date;lsSet("calMode",calMode);lsSet("calRef",calRef);render()};
   $("#cne",m).onclick=()=>{m.remove();eventForm(null,date)};
   $("#cnt",m).onclick=async()=>{m.remove();const v=await form("Nieuwe taak",taskFields(),{date,phase:date<=settings().keyDate?"voor":date<settings().moveDate?"sleutel":date===settings().moveDate?"verhuis":"na"});if(v&&v.title)await safe(()=>add("tasks",{...v,done:false}))};
 }
+/* ---------- dagplan ---------- */
+function dayBadge(k){const d=S.days.find(x=>x.id===k);if(!d)return"";const h=(d.helpers||[]).length,su=(d.supplies||[]).length;return (h||su||d.notes)?`<span class="dbadge">${h?`👥${h}`:""}${su?` 🧰${su}`:""}${d.notes?" 📝":""}</span>`:""}
+const dayDoc=k=>S.days.find(d=>d.id===k)||{helpers:[],supplies:[],notes:""};
+async function saveDay(k,patch){const cur=dayDoc(k);const next={helpers:cur.helpers||[],supplies:cur.supplies||[],notes:cur.notes||"",...patch};await safe(()=>setDoc("days",k,next))}
+function dayPlan(k){
+  const d=dayDoc(k);const helpers=d.helpers||[],sup=d.supplies||[];
+  const dayTasks=S.tasks.filter(t=>t.date===k).sort((a,b)=>(tmin(a.time)??-1)-(tmin(b.time)??-1));
+  const later=S.tasks.filter(t=>!t.done&&t.date&&t.date>k).sort((a,b)=>a.date.localeCompare(b.date)||(tmin(a.time)??-1)-(tmin(b.time)??-1)).slice(0,5);
+  const known=[...new Set(S.days.flatMap(x=>(x.helpers||[]).map(h=>h.name)).filter(Boolean))].sort();
+  const sd=sup.filter(x=>x.done).length;
+  const tRow=t=>`<div class="wrow ${t.done?"done":""}"><input type="checkbox" ${t.done?"checked":""} data-toggle="${t.id}" aria-label="Klaar: ${esc(t.title)}"><div class="wl" data-edit-task="${t.id}"><div>${t.time?`<b class="num">${esc(t.time)}</b> `:""}${esc(t.title)}</div>${t.roomId?`<div class="small muted">${esc(roomName(t.roomId))}</div>`:""}</div></div>`;
+  return `<div class="dpgrid">
+   <section class="dpcard"><div class="dph"><h3>Wie helpen er</h3><span class="tape">${helpers.length||0}</span></div>
+     <div class="hchips">${helpers.map(h=>`<span class="hchip"><b>${esc(h.name)}</b>${h.role?`<span class="muted"> · ${esc(h.role)}</span>`:""}<button data-helperdel="${k}|${h.id}" aria-label="${esc(h.name)} verwijderen">✕</button></span>`).join("")||`<span class="small muted">Nog niemand ingevuld.</span>`}</div>
+     <form class="dpadd" data-helperadd="${k}"><input type="text" id="hn-${k}" placeholder="Naam" list="dl-helpers" autocomplete="off" required><input type="text" id="hr-${k}" placeholder="Taak, bijv. rijdt bakwagen"><button class="btn sm">+</button></form>
+     <datalist id="dl-helpers">${known.map(n=>`<option value="${esc(n)}">`).join("")}</datalist></section>
+   <section class="dpcard"><div class="dph"><h3>Benodigdheden</h3><span class="tape">${sup.length?`${sd}/${sup.length}`:"0"}</span></div>
+     <div>${sup.map(x=>`<div class="wrow ${x.done?"done":""}"><input type="checkbox" ${x.done?"checked":""} data-supdone="${k}|${x.id}" aria-label="${esc(x.text)}"><div class="wl"><div>${esc(x.text)}</div></div><button class="btn sm ghost" data-supdel="${k}|${x.id}" aria-label="Verwijderen">✕</button></div>`).join("")||`<span class="small muted">Wat moet er die dag klaarliggen? Denk aan dozen, tape, gereedschap, eten.</span>`}</div>
+     <form class="dpadd" data-supadd="${k}"><input type="text" id="sp-${k}" placeholder="Bijv. spanbanden, koffie, boormachine" required><button class="btn sm">+</button></form></section>
+   <section class="dpcard"><div class="dph"><h3>Taken</h3><span class="tape">${dayTasks.length?`${dayTasks.filter(t=>t.done).length}/${dayTasks.length}`:"0"}</span></div>
+     <div class="eyebrow">Deze dag</div><div>${dayTasks.map(tRow).join("")||`<span class="small muted">Nog geen taken op deze dag.</span>`}</div>
+     <form class="dpadd" data-daytask="${k}"><input type="text" id="dt-${k}" placeholder="Nieuwe taak voor deze dag" required><button class="btn sm">+</button></form>
+     ${later.length?`<div class="eyebrow" style="margin-top:8px">Daarna</div><div>${later.map(t=>`<div class="wrow"><span class="dpdat num">${esc(dfmt(t.date))}</span><div class="wl" data-edit-task="${t.id}"><div>${esc(t.title)}</div></div></div>`).join("")}</div>`:""}
+     <a class="small" href="#planning">Naar de planning ›</a></section>
+   <section class="dpcard"><div class="dph"><h3>Notities</h3></div>
+     <textarea id="dn-${k}" data-daynotes="${k}" placeholder="Bijv. sleutel om 10:00 bij de notaris ophalen, parkeervergunning ligt op het dashboard…" rows="5">${esc(d.notes||"")}</textarea>
+     <span class="small muted" id="dns-${k}">Wordt automatisch bewaard.</span></section>
+  </div>`;
+}
+let notesT=null;
+document.addEventListener("input",e=>{const el=e.target;if(!el.dataset||!el.dataset.daynotes)return;const k=el.dataset.daynotes;clearTimeout(notesT);const st=$("#dns-"+k);if(st)st.textContent="Bewaren…";
+  notesT=setTimeout(async()=>{await saveDay(k,{notes:el.value});const s2=$("#dns-"+k);if(s2)s2.textContent="Bewaard."},700)});
 /* taak naar een dag slepen */
 (function(){let drag=null;
   document.addEventListener("pointerdown",e=>{const g=e.target.closest("[data-tgrip]");if(!g)return;e.preventDefault();const card=g.closest(".shopit");const r=card.getBoundingClientRect();
@@ -1023,7 +1077,7 @@ async function withBusy(msg,fn){const t=document.createElement("div");t.classNam
 /* ---------- events ---------- */
 document.addEventListener("click",async e=>{
   if(e.target.closest("label")&&e.target.closest("[data-open-pano]"))return;
-  const t=e.target.closest("[data-calgoday],[data-calopen],[data-calmode],[data-calnav],[data-caljump],[data-calweek],[data-calday],[data-workpdf],[data-workedit],[data-shoppdf],[data-shopmenu],[data-shopedit],[data-copy-pano],[data-dl-pano],[data-pic],[data-open-render],[data-act],[data-toggle],[data-edit-task],[data-edit-item],[data-edit-paint],[data-edit-sh],[data-tip],[data-tc],[data-pf],[data-plan],[data-place],[data-open-pano],[data-del-mood],[data-pick]");
+  const t=e.target.closest("[data-helperdel],[data-supdel],[data-calgoday],[data-calopen],[data-calmode],[data-calnav],[data-caljump],[data-calweek],[data-calday],[data-workpdf],[data-workedit],[data-shoppdf],[data-shopmenu],[data-shopedit],[data-copy-pano],[data-dl-pano],[data-pic],[data-open-render],[data-act],[data-toggle],[data-edit-task],[data-edit-item],[data-edit-paint],[data-edit-sh],[data-tip],[data-tc],[data-pf],[data-plan],[data-place],[data-open-pano],[data-del-mood],[data-pick]");
   if(!t||!db)return;if(e.target.closest("label")&&t.dataset.openPano)return;const d=t.dataset;
   if(d.toggle!==undefined){const task=byId("tasks",d.toggle);if(task)await safe(()=>upd("tasks",task.id,{done:!task.done,doneBy:!task.done?meId:null,doneAt:!task.done?Date.now():null}));return}
   if(d.editTask){e.preventDefault();const task=byId("tasks",d.editTask);const v=await form("Taak bewerken",taskFields(),task,"Verwijderen");if(!v)return;if(v.__extra){if(await confirmBox(`“${task.title}” verwijderen?`))await safe(()=>del("tasks",task.id));return}await safe(()=>upd("tasks",task.id,v));return}
@@ -1042,6 +1096,8 @@ document.addEventListener("click",async e=>{
   if(d.pic){openPic(d.pic);return}
   if(d.shoppdf){shopPdf(d.shoppdf);return}
   if(d.calopen){e.stopPropagation();calOpen(d.calopen);return}
+  if(d.helperdel){const [k,id]=d.helperdel.split("|");await saveDay(k,{helpers:(dayDoc(k).helpers||[]).filter(h=>h.id!==id)});return}
+  if(d.supdel){const [k,id]=d.supdel.split("|");await saveDay(k,{supplies:(dayDoc(k).supplies||[]).filter(x=>x.id!==id)});return}
   if(d.calgoday){calMode="dag";calRef=d.calgoday;lsSet("calMode",calMode);lsSet("calRef",calRef);render();return}
   if(d.calmode){calMode=d.calmode;lsSet("calMode",calMode);render();return}
   if(d.calnav!==undefined){const n=+d.calnav;let r=calRef?fromIso(calRef):new Date();if(!n)r=new Date();else if(calMode==="maand")r=new Date(r.getFullYear(),r.getMonth()+n,1,12);else if(calMode==="dag")r=addDays(r,n);else r=addDays(r,7*n);calRef=iso(r);lsSet("calRef",calRef);render();return}
@@ -1086,6 +1142,7 @@ document.addEventListener("change",async e=>{
   if(el.dataset.set){const s=settings();const v=el.dataset.set==="budget"?num(el.value):el.value;await safe(()=>setDoc("settings","main",{keyDate:s.keyDate,moveDate:s.moveDate,budget:s.budget,[el.dataset.set]:v}));return}
   if(el.dataset.itemStatus){await safe(()=>upd("items",el.dataset.itemStatus,{status:el.value}));return}
   if(el.dataset.shStatus){await safe(()=>upd("sh",el.dataset.shStatus,{status:el.value}));return}
+  if(el.dataset.supdone){const [k,id]=el.dataset.supdone.split("|");await saveDay(k,{supplies:(dayDoc(k).supplies||[]).map(x=>x.id===id?{...x,done:el.checked}:x)});return}
   if(el.dataset.work){await workToggle(el.dataset.work,el.checked);return}
   if(el.dataset.shopdone){await shopToggle(el.dataset.shopdone,el.checked);return}
   if(el.dataset.paintBought){await safe(()=>upd("paints",el.dataset.paintBought,{bought:el.checked}));return}
@@ -1106,6 +1163,9 @@ document.addEventListener("submit",async e=>{
   if(f.dataset.addtaskPhase||f.dataset.addtaskRoom){e.preventDefault();const inp=f.querySelector("input");const title=inp.value.trim();if(!title)return;inp.value="";
     await safe(()=>add("tasks",{title,phase:f.dataset.addtaskPhase||"na",roomId:f.dataset.addtaskRoom||"",date:"",done:false}))}
   if(f.id==="chatform"){e.preventDefault();sendChat()}
+  if(f.dataset.helperadd){e.preventDefault();const k=f.dataset.helperadd;const n=$("#hn-"+k).value.trim(),r=$("#hr-"+k).value.trim();if(!n)return;$("#hn-"+k).value="";$("#hr-"+k).value="";await saveDay(k,{helpers:[...(dayDoc(k).helpers||[]),{id:rid(),name:n,role:r}]})}
+  if(f.dataset.supadd){e.preventDefault();const k=f.dataset.supadd;const v=$("#sp-"+k).value.trim();if(!v)return;$("#sp-"+k).value="";await saveDay(k,{supplies:[...(dayDoc(k).supplies||[]),{id:rid(),text:v,done:false}]})}
+  if(f.dataset.daytask){e.preventDefault();const k=f.dataset.daytask;const v=$("#dt-"+k).value.trim();if(!v)return;$("#dt-"+k).value="";const st=settings();await safe(()=>add("tasks",{title:v,date:k,phase:k<st.keyDate?"voor":k<st.moveDate?"sleutel":k===st.moveDate?"verhuis":"na",roomId:"",done:false}))}
 });
 /* afbeelding plakken (Ctrl/Cmd+V) op een kamerpagina -> moodboard */
 document.addEventListener("paste",async e=>{
